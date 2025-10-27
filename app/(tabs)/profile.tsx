@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
+    Alert,
     Platform,
     ScrollView,
     StyleSheet,
-    Switch,
     Text,
     TouchableOpacity,
     View,
@@ -15,220 +14,306 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
+import { Input } from '@/components/ui/input';
 import { Colors, DesignSystem } from '@/constants/theme';
+import { StorageService } from '@/services/storage';
 
-interface ProfileMenuItem {
-  id: string;
-  title: string;
-  subtitle?: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
-  showArrow?: boolean;
-  rightComponent?: React.ReactNode;
+interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+  currency: string;
+  language: string;
+  notifications: boolean;
+  darkMode: boolean;
 }
 
 export default function ProfileScreen() {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [profile, setProfile] = useState<UserProfile>({
+    name: 'İstifadəçi',
+    email: 'user@example.com',
+    phone: '+994 50 123 45 67',
+    currency: '₼',
+    language: 'az',
+    notifications: true,
+    darkMode: false,
+  });
 
-  const profileMenuItems: ProfileMenuItem[] = [
-    {
-      id: 'personal-info',
-      title: 'Şəxsi Məlumatlar',
-      subtitle: 'Ad, soyad və kontakt məlumatları',
-      icon: 'person',
-      onPress: () => {},
-      showArrow: true,
-    },
-    {
-      id: 'security',
-      title: 'Təhlükəsizlik',
-      subtitle: 'Şifrə və təhlükəsizlik tənzimləmələri',
-      icon: 'shield-checkmark',
-      onPress: () => {},
-      showArrow: true,
-    },
-    {
-      id: 'notifications',
-      title: 'Bildirişlər',
-      subtitle: 'Push bildirişləri və email',
-      icon: 'notifications',
-      onPress: () => {},
-      rightComponent: (
-        <Switch
-          value={notificationsEnabled}
-          onValueChange={setNotificationsEnabled}
-          trackColor={{ false: Colors.light.border, true: Colors.light.primary }}
-          thumbColor={notificationsEnabled ? '#FFFFFF' : Colors.light.iconSecondary}
-        />
-      ),
-    },
-    {
-      id: 'biometric',
-      title: 'Biometrik Giriş',
-      subtitle: 'Barmaq izi və ya Face ID',
-      icon: 'finger-print',
-      onPress: () => {},
-      rightComponent: (
-        <Switch
-          value={biometricEnabled}
-          onValueChange={setBiometricEnabled}
-          trackColor={{ false: Colors.light.border, true: Colors.light.primary }}
-          thumbColor={biometricEnabled ? '#FFFFFF' : Colors.light.iconSecondary}
-        />
-      ),
-    },
-    {
-      id: 'language',
-      title: 'Dil',
-      subtitle: 'Azərbaycan dili',
-      icon: 'language',
-      onPress: () => {},
-      showArrow: true,
-    },
-    {
-      id: 'currency',
-      title: 'Valyuta',
-      subtitle: 'AZN (Azərbaycan Manatı)',
-      icon: 'cash',
-      onPress: () => {},
-      showArrow: true,
-    },
-  ];
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editField, setEditField] = useState<keyof UserProfile | null>(null);
+  const [editValue, setEditValue] = useState('');
 
-  const supportMenuItems: ProfileMenuItem[] = [
-    {
-      id: 'help',
-      title: 'Kömək və Dəstək',
-      icon: 'help-circle',
-      onPress: () => {},
-      showArrow: true,
-    },
-    {
-      id: 'contact',
-      title: 'Bizimlə Əlaqə',
-      icon: 'mail',
-      onPress: () => {},
-      showArrow: true,
-    },
-    {
-      id: 'feedback',
-      title: 'Təklif və Şikayət',
-      icon: 'chatbubble',
-      onPress: () => {},
-      showArrow: true,
-    },
-    {
-      id: 'about',
-      title: 'Haqqımızda',
-      subtitle: 'Versiya 1.0.0',
-      icon: 'information-circle',
-      onPress: () => {},
-      showArrow: true,
-    },
-  ];
+  const handleEditProfile = (field: keyof UserProfile, currentValue: string) => {
+    setEditField(field);
+    setEditValue(currentValue);
+    setShowEditModal(true);
+  };
 
-  const renderMenuItem = (item: ProfileMenuItem) => (
+  const handleSaveProfile = () => {
+    if (!editField) return;
+
+    const updatedProfile = {
+      ...profile,
+      [editField]: editValue,
+    };
+    
+    setProfile(updatedProfile);
+    setShowEditModal(false);
+    setEditField(null);
+    setEditValue('');
+  };
+
+  const handleClearData = () => {
+    Alert.alert(
+      'Məlumatları Təmizlə',
+      'Bütün əməliyyatlar, hədəflər və borclar silinəcək. Bu əməliyyat geri alına bilməz.',
+      [
+        { text: 'Ləğv Et', style: 'cancel' },
+        {
+          text: 'Təmizlə',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await StorageService.clearAllData();
+              Alert.alert('Uğurlu', 'Bütün məlumatlar təmizləndi');
+            } catch (error) {
+              Alert.alert('Xəta', 'Məlumatlar təmizlənərkən xəta baş verdi');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleExportData = async () => {
+    try {
+      const transactions = await StorageService.getTransactions();
+      const goals = await StorageService.getGoals();
+      
+      const exportData = {
+        transactions,
+        goals,
+        profile,
+        exportDate: new Date().toISOString(),
+      };
+      
+      // Bu real app-də file system-ə yazılardı
+      console.log('Export Data:', JSON.stringify(exportData, null, 2));
+      Alert.alert('Uğurlu', 'Məlumatlar console-da görünür');
+    } catch (error) {
+      Alert.alert('Xəta', 'Məlumatlar eksport edilərkən xəta baş verdi');
+    }
+  };
+
+  const getFieldLabel = (field: keyof UserProfile): string => {
+    const labels = {
+      name: 'Ad Soyad',
+      email: 'E-mail',
+      phone: 'Telefon',
+      currency: 'Valyuta',
+      language: 'Dil',
+      notifications: 'Bildirişlər',
+      darkMode: 'Qaranlıq rejim',
+    };
+    return labels[field];
+  };
+
+  const getFieldValue = (field: keyof UserProfile): string => {
+    const value = profile[field];
+    if (typeof value === 'boolean') {
+      return value ? 'Aktiv' : 'Deaktiv';
+    }
+    return value.toString();
+  };
+
+  const renderProfileItem = (field: keyof UserProfile, icon: keyof typeof Ionicons.glyphMap) => (
     <TouchableOpacity
-      key={item.id}
-      style={styles.menuItem}
-      onPress={item.onPress}
-      disabled={!item.showArrow && !item.rightComponent}
+      key={field}
+      style={styles.profileItem}
+      onPress={() => {
+        if (typeof profile[field] === 'boolean') {
+          setProfile(prev => ({ ...prev, [field]: !prev[field] }));
+        } else {
+          handleEditProfile(field, profile[field].toString());
+        }
+      }}
     >
-      <View style={styles.menuItemLeft}>
-        <View style={styles.menuIconContainer}>
-          <Ionicons name={item.icon} size={20} color={Colors.light.icon} />
+      <View style={styles.profileItemLeft}>
+        <View style={styles.profileIcon}>
+          <Ionicons name={icon} size={20} color={Colors.light.primary} />
         </View>
-        <View style={styles.menuItemContent}>
-          <Text style={styles.menuItemTitle}>{item.title}</Text>
-          {item.subtitle && (
-            <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
-          )}
+        <View style={styles.profileInfo}>
+          <Text style={styles.profileLabel}>{getFieldLabel(field)}</Text>
+          <Text style={styles.profileValue}>{getFieldValue(field)}</Text>
         </View>
       </View>
-      <View style={styles.menuItemRight}>
-        {item.rightComponent || (item.showArrow && (
-          <Ionicons name="chevron-forward" size={16} color={Colors.light.iconSecondary} />
-        ))}
-      </View>
+      <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
     </TouchableOpacity>
   );
 
-  const renderProfileHeader = () => (
-    <Card variant="gradient" style={styles.profileCard}>
-      <View style={styles.profileContent}>
-        <View style={styles.avatarContainer}>
-          <LinearGradient
-            colors={['#1E88E5', '#90CAF9']}
-            style={styles.avatarGradient}
-          >
-            <Text style={styles.avatarText}>RM</Text>
-          </LinearGradient>
+  const renderEditModal = () => (
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContent}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>
+            {editField ? getFieldLabel(editField) : 'Redaktə Et'}
+          </Text>
+          <TouchableOpacity onPress={() => setShowEditModal(false)}>
+            <Ionicons name="close" size={24} color={Colors.light.textSecondary} />
+          </TouchableOpacity>
         </View>
-        <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>Ramzi Mammadli</Text>
-          <Text style={styles.profileEmail}>ramzi@example.com</Text>
-          <Text style={styles.profilePhone}>+994 50 123 45 67</Text>
+
+        <View style={styles.modalBody}>
+          <Input
+            placeholder={editField ? getFieldLabel(editField) : 'Dəyər'}
+            value={editValue}
+            onChangeText={setEditValue}
+            style={styles.modalInput}
+            autoFocus
+          />
         </View>
-        <TouchableOpacity style={styles.editButton}>
-          <Ionicons name="create" size={16} color={Colors.light.primary} />
-        </TouchableOpacity>
+
+        <View style={styles.modalFooter}>
+          <Button
+            title="Saxla"
+            onPress={handleSaveProfile}
+            style={styles.saveButton}
+          />
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderStatsCard = () => (
+    <Card style={styles.statsCard}>
+      <Text style={styles.statsTitle}>App Statistikaları</Text>
+      <View style={styles.statsGrid}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statLabel}>Ümumi Əməliyyat</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statLabel}>Aktiv Hədəf</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statLabel}>Tamamlanmış Hədəf</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statLabel}>Ümumi Borç</Text>
+        </View>
       </View>
     </Card>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header
-        title="Profil"
-        subtitle="Hesabınızı idarə edin"
-        rightIcon="settings"
-        onRightPress={() => {}}
-      />
+      <Header title="Profil" />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile header */}
-        {renderProfileHeader()}
+        {/* User Info */}
+        <Card style={styles.userCard}>
+          <View style={styles.userInfo}>
+            <View style={styles.avatar}>
+              <Ionicons name="person" size={32} color={Colors.light.primary} />
+            </View>
+            <View style={styles.userDetails}>
+              <Text style={styles.userName}>{profile.name}</Text>
+              <Text style={styles.userEmail}>{profile.email}</Text>
+            </View>
+          </View>
+        </Card>
 
-        {/* Profile settings */}
+        {/* Stats */}
+        {renderStatsCard()}
+
+        {/* Profile Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hesab Tənzimləmələri</Text>
-          <Card style={styles.menuCard}>
-            {profileMenuItems.map((item, index) => (
-              <View key={item.id}>
-                {renderMenuItem(item)}
-                {index < profileMenuItems.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
+          <Text style={styles.sectionTitle}>Profil Məlumatları</Text>
+          <Card style={styles.settingsCard}>
+            {renderProfileItem('name', 'person-outline')}
+            {renderProfileItem('email', 'mail-outline')}
+            {renderProfileItem('phone', 'call-outline')}
           </Card>
         </View>
 
-        {/* Support */}
+        {/* App Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Dəstək</Text>
-          <Card style={styles.menuCard}>
-            {supportMenuItems.map((item, index) => (
-              <View key={item.id}>
-                {renderMenuItem(item)}
-                {index < supportMenuItems.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
+          <Text style={styles.sectionTitle}>App Ayarları</Text>
+          <Card style={styles.settingsCard}>
+            {renderProfileItem('currency', 'cash-outline')}
+            {renderProfileItem('language', 'language-outline')}
+            {renderProfileItem('notifications', 'notifications-outline')}
+            {renderProfileItem('darkMode', 'moon-outline')}
           </Card>
         </View>
 
-        {/* Logout button */}
-        <View style={styles.logoutContainer}>
-          <Button
-            title="Çıxış"
-            variant="outline"
-            size="large"
-            icon={<Ionicons name="log-out" size={20} color={Colors.light.error} />}
-            onPress={() => {}}
-            style={[styles.logoutButton, { borderColor: Colors.light.error }]}
-            textStyle={{ color: Colors.light.error }}
-          />
+        {/* Data Management */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Məlumat İdarəetməsi</Text>
+          <Card style={styles.settingsCard}>
+            <TouchableOpacity style={styles.profileItem} onPress={handleExportData}>
+              <View style={styles.profileItemLeft}>
+                <View style={styles.profileIcon}>
+                  <Ionicons name="download-outline" size={20} color={Colors.light.success} />
+                </View>
+                <View style={styles.profileInfo}>
+                  <Text style={styles.profileLabel}>Məlumatları Eksport Et</Text>
+                  <Text style={styles.profileValue}>JSON formatında</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.profileItem} onPress={handleClearData}>
+              <View style={styles.profileItemLeft}>
+                <View style={styles.profileIcon}>
+                  <Ionicons name="trash-outline" size={20} color={Colors.light.error} />
+                </View>
+                <View style={styles.profileInfo}>
+                  <Text style={styles.profileLabel}>Bütün Məlumatları Təmizlə</Text>
+                  <Text style={styles.profileValue}>Geri alına bilməz</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+            </TouchableOpacity>
+          </Card>
+        </View>
+
+        {/* App Info */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>App Haqqında</Text>
+          <Card style={styles.settingsCard}>
+            <View style={styles.profileItem}>
+              <View style={styles.profileItemLeft}>
+                <View style={styles.profileIcon}>
+                  <Ionicons name="information-circle-outline" size={20} color={Colors.light.info} />
+                </View>
+                <View style={styles.profileInfo}>
+                  <Text style={styles.profileLabel}>Versiya</Text>
+                  <Text style={styles.profileValue}>1.0.0</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.profileItem}>
+              <View style={styles.profileItemLeft}>
+                <View style={styles.profileIcon}>
+                  <Ionicons name="code-outline" size={20} color={Colors.light.info} />
+                </View>
+                <View style={styles.profileInfo}>
+                  <Text style={styles.profileLabel}>Developer</Text>
+                  <Text style={styles.profileValue}>MyMoney Team</Text>
+                </View>
+              </View>
+            </View>
+          </Card>
         </View>
       </ScrollView>
+
+      {showEditModal && renderEditModal()}
     </SafeAreaView>
   );
 }
@@ -241,119 +326,167 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: DesignSystem.spacing.md,
+    paddingBottom: DesignSystem.spacing.xl,
   },
-  profileCard: {
-    marginBottom: DesignSystem.spacing.xl,
+  userCard: {
+    padding: DesignSystem.spacing.lg,
+    marginBottom: DesignSystem.spacing.md,
   },
-  profileContent: {
+  userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatarContainer: {
-    marginRight: DesignSystem.spacing.md,
-  },
-  avatarGradient: {
+  avatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
+    backgroundColor: Colors.light.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: DesignSystem.spacing.md,
   },
-  avatarText: {
+  userDetails: {
+    flex: 1,
+  },
+  userName: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: '600',
+    color: Colors.light.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    marginBottom: 4,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
+  },
+  statsCard: {
+    padding: DesignSystem.spacing.md,
+    marginBottom: DesignSystem.spacing.md,
+  },
+  statsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    marginBottom: DesignSystem.spacing.md,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  statItem: {
+    width: '48%',
+    alignItems: 'center',
+    marginBottom: DesignSystem.spacing.md,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.light.primary,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
+    textAlign: 'center',
+  },
+  section: {
+    marginBottom: DesignSystem.spacing.lg,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    marginBottom: DesignSystem.spacing.sm,
+  },
+  settingsCard: {
+    padding: 0,
+  },
+  profileItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: DesignSystem.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  profileItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  profileIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: DesignSystem.borderRadius.small,
+    backgroundColor: Colors.light.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: DesignSystem.spacing.md,
   },
   profileInfo: {
     flex: 1,
   },
-  profileName: {
-    fontSize: 20,
-    fontWeight: '700',
+  profileLabel: {
+    fontSize: 16,
+    fontWeight: '500',
     color: Colors.light.text,
-    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
+    marginBottom: 2,
   },
-  profileEmail: {
+  profileValue: {
     fontSize: 14,
     color: Colors.light.textSecondary,
-    marginTop: DesignSystem.spacing.xs,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
-  profilePhone: {
-    fontSize: 14,
-    color: Colors.light.textSecondary,
-    marginTop: DesignSystem.spacing.xs,
-    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
-  },
-  editButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.light.surface,
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
-    ...DesignSystem.shadows.small,
+    zIndex: 1000,
   },
-  section: {
-    marginBottom: DesignSystem.spacing.xl,
+  modalContent: {
+    backgroundColor: Colors.light.background,
+    borderRadius: DesignSystem.borderRadius.large,
+    width: '90%',
+    ...DesignSystem.shadows.large,
   },
-  sectionTitle: {
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: DesignSystem.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  modalTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.light.text,
-    marginBottom: DesignSystem.spacing.md,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
-  menuCard: {
-    padding: 0,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  modalBody: {
     padding: DesignSystem.spacing.md,
   },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  modalInput: {
+    marginBottom: 0,
   },
-  menuIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: DesignSystem.borderRadius.medium,
-    backgroundColor: Colors.light.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: DesignSystem.spacing.md,
+  modalFooter: {
+    padding: DesignSystem.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
   },
-  menuItemContent: {
-    flex: 1,
-  },
-  menuItemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
-  },
-  menuItemSubtitle: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    marginTop: DesignSystem.spacing.xs,
-    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
-  },
-  menuItemRight: {
-    marginLeft: DesignSystem.spacing.sm,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.light.border,
-    marginLeft: DesignSystem.spacing.md,
-  },
-  logoutContainer: {
-    marginBottom: DesignSystem.spacing.xl,
-  },
-  logoutButton: {
-    borderColor: Colors.light.error,
+  saveButton: {
+    width: '100%',
   },
 });

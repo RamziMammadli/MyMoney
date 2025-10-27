@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -16,18 +16,8 @@ import { Card } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
 import { Input } from '@/components/ui/input';
 import { Colors, DesignSystem } from '@/constants/theme';
+import { Debt, StorageService } from '@/services/storage';
 
-interface Debt {
-  id: string;
-  title: string;
-  description: string;
-  amount: number;
-  paidAmount: number;
-  creditor: string;
-  dueDate: string;
-  isPaid: boolean;
-  createdAt: string;
-}
 
 export default function DebtsScreen() {
   const [debts, setDebts] = useState<Debt[]>([]);
@@ -46,23 +36,11 @@ export default function DebtsScreen() {
 
   const loadDebts = async () => {
     try {
-      // For now, we'll use a simple array since we don't have debt storage yet
-      // In a real app, you'd use AsyncStorage or a database
-      const savedDebts = await getDebtsFromStorage();
+      const savedDebts = await StorageService.getDebts();
       setDebts(savedDebts);
     } catch (error) {
       console.error('Error loading debts:', error);
     }
-  };
-
-  const getDebtsFromStorage = async (): Promise<Debt[]> => {
-    // This would be implemented with AsyncStorage in a real app
-    return [];
-  };
-
-  const saveDebtsToStorage = async (debtsList: Debt[]) => {
-    // This would be implemented with AsyncStorage in a real app
-    console.log('Saving debts:', debtsList);
   };
 
   const handleAddDebt = async () => {
@@ -72,8 +50,7 @@ export default function DebtsScreen() {
     }
 
     try {
-      const debt: Debt = {
-        id: Date.now().toString(),
+      await StorageService.saveDebt({
         title: newDebt.title,
         description: newDebt.description,
         amount: parseFloat(newDebt.amount),
@@ -81,12 +58,7 @@ export default function DebtsScreen() {
         creditor: newDebt.creditor,
         dueDate: newDebt.dueDate,
         isPaid: false,
-        createdAt: new Date().toISOString(),
-      };
-
-      const updatedDebts = [...debts, debt];
-      setDebts(updatedDebts);
-      await saveDebtsToStorage(updatedDebts);
+      });
 
       setNewDebt({
         title: '',
@@ -96,6 +68,7 @@ export default function DebtsScreen() {
         dueDate: '',
       });
       setShowAddDebtModal(false);
+      await loadDebts(); // Reload debts from storage
     } catch (error) {
       console.error('Error saving debt:', error);
       Alert.alert('Xəta', 'Borç əlavə edilərkən xəta baş verdi');
@@ -104,20 +77,18 @@ export default function DebtsScreen() {
 
   const handlePayDebt = async (debtId: string, amount: number) => {
     try {
-      const updatedDebts = debts.map(debt => {
-        if (debt.id === debtId) {
-          const newPaidAmount = Math.min(debt.paidAmount + amount, debt.amount);
-          return {
-            ...debt,
-            paidAmount: newPaidAmount,
-            isPaid: newPaidAmount >= debt.amount,
-          };
-        }
-        return debt;
+      const debt = debts.find(d => d.id === debtId);
+      if (!debt) return;
+
+      const newPaidAmount = Math.min(debt.paidAmount + amount, debt.amount);
+      const isPaid = newPaidAmount >= debt.amount;
+
+      await StorageService.updateDebt(debtId, {
+        paidAmount: newPaidAmount,
+        isPaid,
       });
 
-      setDebts(updatedDebts);
-      await saveDebtsToStorage(updatedDebts);
+      await loadDebts(); // Reload debts from storage
     } catch (error) {
       console.error('Error updating debt:', error);
     }
@@ -133,9 +104,13 @@ export default function DebtsScreen() {
           text: 'Sil',
           style: 'destructive',
           onPress: async () => {
-            const updatedDebts = debts.filter(debt => debt.id !== debtId);
-            setDebts(updatedDebts);
-            await saveDebtsToStorage(updatedDebts);
+            try {
+              await StorageService.deleteDebt(debtId);
+              await loadDebts(); // Reload debts from storage
+            } catch (error) {
+              console.error('Error deleting debt:', error);
+              Alert.alert('Xəta', 'Borcu silərkən xəta baş verdi');
+            }
           },
         },
       ]
@@ -157,8 +132,9 @@ export default function DebtsScreen() {
     const isOverdue = dueDate < new Date() && !debt.isPaid;
     
     return (
-      <Card key={debt.id} style={[styles.debtItem, debt.isPaid && styles.paidDebt]}>
-        <View style={styles.debtHeader}>
+      <Card key={debt.id} style={styles.debtItem}>
+        <View style={debt.isPaid ? styles.paidDebt : undefined}>
+          <View style={styles.debtHeader}>
           <View style={styles.debtTitleContainer}>
             <Text style={[styles.debtTitle, debt.isPaid && styles.paidText]}>
               {debt.title}
@@ -252,6 +228,7 @@ export default function DebtsScreen() {
               </TouchableOpacity>
             </View>
           )}
+        </View>
         </View>
       </Card>
     );
@@ -464,7 +441,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.success + '20',
     paddingHorizontal: DesignSystem.spacing.sm,
     paddingVertical: DesignSystem.spacing.xs,
-    borderRadius: DesignSystem.borderRadius.sm,
+    borderRadius: DesignSystem.borderRadius.small,
     gap: 4,
   },
   paidBadgeText: {
@@ -522,14 +499,14 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: DesignSystem.borderRadius.sm,
+    backgroundColor: Colors.light.surface,
+    borderRadius: DesignSystem.borderRadius.small,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: Colors.light.error,
-    borderRadius: DesignSystem.borderRadius.sm,
+    borderRadius: DesignSystem.borderRadius.small,
   },
   paidProgress: {
     backgroundColor: Colors.light.success,
@@ -557,7 +534,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.error,
     paddingHorizontal: DesignSystem.spacing.sm,
     paddingVertical: DesignSystem.spacing.xs,
-    borderRadius: DesignSystem.borderRadius.sm,
+    borderRadius: DesignSystem.borderRadius.small,
   },
   payButtonText: {
     fontSize: 12,
@@ -627,7 +604,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: Colors.light.background,
-    borderRadius: DesignSystem.borderRadius.lg,
+    borderRadius: DesignSystem.borderRadius.large,
     width: '90%',
     maxHeight: '80%',
     ...DesignSystem.shadows.large,

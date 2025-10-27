@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -91,7 +91,13 @@ export default function ExpensesScreen() {
             />
           </View>
           <View style={styles.expenseInfo}>
-            <Text style={styles.expenseDescription}>{expense.description}</Text>
+            <Text 
+              style={styles.expenseDescription}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {expense.description}
+            </Text>
             <Text style={styles.expenseCategory}>{category?.name || expense.category}</Text>
             <Text style={styles.expenseDate}>
               {date.toLocaleDateString('az-AZ', { 
@@ -279,13 +285,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: DesignSystem.spacing.md,
     paddingVertical: DesignSystem.spacing.sm,
     backgroundColor: Colors.light.surface,
-    borderRadius: DesignSystem.borderRadius.full,
+    borderRadius: DesignSystem.borderRadius.round,
     marginRight: DesignSystem.spacing.sm,
   },
   activeFilterChip: {
     backgroundColor: Colors.light.primary,
   },
   filterChipText: {
+    width: '100%',
     fontSize: 12,
     fontWeight: '500',
     color: Colors.light.textSecondary,
@@ -303,22 +310,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: DesignSystem.spacing.md,
     marginBottom: DesignSystem.spacing.sm,
+
   },
   expenseLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    width: '100%',
   },
   expenseIcon: {
     width: 40,
     height: 40,
-    borderRadius: DesignSystem.borderRadius.md,
+    borderRadius: DesignSystem.borderRadius.medium,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: DesignSystem.spacing.md,
+    marginRight: DesignSystem.spacing.md
   },
   expenseInfo: {
     flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+
   },
   expenseDescription: {
     fontSize: 16,
@@ -326,23 +338,27 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: 2,
+    width: 300,
   },
   expenseCategory: {
     fontSize: 14,
     color: Colors.light.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: 2,
+    width: 200,
   },
   expenseDate: {
     fontSize: 12,
     color: Colors.light.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
+    width: 200,
   },
   expenseAmount: {
     fontSize: 16,
     fontWeight: '700',
     color: Colors.light.error,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    marginTop: 10,
   },
   categoriesList: {
     marginBottom: DesignSystem.spacing.xl,
@@ -362,7 +378,7 @@ const styles = StyleSheet.create({
   categoryIcon: {
     width: 48,
     height: 48,
-    borderRadius: DesignSystem.borderRadius.md,
+    borderRadius: DesignSystem.borderRadius.medium,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: DesignSystem.spacing.md,

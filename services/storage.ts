@@ -10,21 +10,22 @@ export interface Transaction {
   createdAt: string;
 }
 
-export interface Goal {
+export interface Debt {
   id: string;
   title: string;
   description: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline: string;
-  category: string;
-  isCompleted: boolean;
+  amount: number;
+  paidAmount: number;
+  creditor: string;
+  dueDate: string;
+  isPaid: boolean;
   createdAt: string;
 }
 
 const STORAGE_KEYS = {
   TRANSACTIONS: 'transactions',
   GOALS: 'goals',
+  DEBTS: 'debts',
   SETTINGS: 'settings',
 };
 
@@ -199,16 +200,55 @@ export class StorageService {
     ];
   }
 
-  // Clear all data
-  static async clearAllData(): Promise<void> {
+  // Debts
+  static async getDebts(): Promise<Debt[]> {
     try {
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.TRANSACTIONS,
-        STORAGE_KEYS.GOALS,
-        STORAGE_KEYS.SETTINGS,
-      ]);
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.DEBTS);
+      return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error('Error clearing data:', error);
+      console.error('Error getting debts:', error);
+      return [];
+    }
+  }
+
+  static async saveDebt(debt: Omit<Debt, 'id' | 'createdAt'>): Promise<Debt> {
+    try {
+      const debts = await this.getDebts();
+      const newDebt: Debt = {
+        ...debt,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+      };
+      
+      debts.unshift(newDebt);
+      await AsyncStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(debts));
+      return newDebt;
+    } catch (error) {
+      console.error('Error saving debt:', error);
+      throw error;
+    }
+  }
+
+  static async updateDebt(id: string, updates: Partial<Debt>): Promise<void> {
+    try {
+      const debts = await this.getDebts();
+      const updatedDebts = debts.map(debt => 
+        debt.id === id ? { ...debt, ...updates } : debt
+      );
+      await AsyncStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(updatedDebts));
+    } catch (error) {
+      console.error('Error updating debt:', error);
+      throw error;
+    }
+  }
+
+  static async deleteDebt(id: string): Promise<void> {
+    try {
+      const debts = await this.getDebts();
+      const filteredDebts = debts.filter(debt => debt.id !== id);
+      await AsyncStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(filteredDebts));
+    } catch (error) {
+      console.error('Error deleting debt:', error);
       throw error;
     }
   }
