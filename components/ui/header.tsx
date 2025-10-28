@@ -2,13 +2,13 @@ import { Colors, DesignSystem } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    Platform,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    ViewStyle,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -167,10 +167,73 @@ export interface BalanceHeaderProps {
   onPress?: () => void;
 }
 
+// App Header Component
+interface AppHeaderProps {
+  title?: string;
+  onNotificationPress?: () => void;
+  onProfilePress?: () => void;
+  onSearchPress?: () => void;
+  notificationCount?: number;
+}
+
+export function AppHeader({ 
+  title = 'Cibim',
+  onNotificationPress, 
+  onProfilePress, 
+  onSearchPress,
+  notificationCount = 0 
+}: AppHeaderProps) {
+  return (
+    <View style={styles.appHeaderContainer}>
+      <View style={styles.appHeaderContent}>
+        {/* Left Side - App Name */}
+        <View style={styles.appHeaderLeft}>
+          <Text style={styles.appTitle}>{title}</Text>
+          <Text style={styles.appSubtitle}>Pul İdarəetməsi</Text>
+        </View>
+
+        {/* Right Side - Actions */}
+        <View style={styles.appHeaderRight}>
+          {/* Search Button */}
+          <TouchableOpacity 
+            style={styles.headerActionButton}
+            onPress={onSearchPress}
+          >
+            <Ionicons name="search" size={20} color={Colors.light.text} />
+          </TouchableOpacity>
+
+          {/* Notifications Button */}
+          <TouchableOpacity 
+            style={styles.headerActionButton}
+            onPress={onNotificationPress}
+          >
+            <Ionicons name="notifications-outline" size={20} color={Colors.light.text} />
+            {notificationCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Profile Button */}
+          <TouchableOpacity 
+            style={styles.headerActionButton}
+            onPress={onProfilePress}
+          >
+            <Ionicons name="person-circle-outline" size={20} color={Colors.light.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export function BalanceHeader({ balance, currency, onPress }: BalanceHeaderProps) {
   return (
     <Header
-      title="MyMoney"
+      title="Cibim"
       subtitle={`${balance} ${currency}`}
       variant="gradient"
       rightIcon="eye"
@@ -183,6 +246,7 @@ export function BalanceHeader({ balance, currency, onPress }: BalanceHeaderProps
 const styles = StyleSheet.create({
   container: {
     zIndex: 1000,
+    backgroundColor: 'red',
   },
   headerContent: {
     flexDirection: 'row',
@@ -201,5 +265,70 @@ const styles = StyleSheet.create({
   },
   balanceHeader: {
     marginBottom: DesignSystem.spacing.sm,
+  },
+  // App Header Styles
+  appHeaderContainer: {
+    backgroundColor: Colors.light.background,
+    paddingTop: Platform.OS === 'ios' ? 80 : 20,
+    paddingBottom: DesignSystem.spacing.md,
+    paddingHorizontal: DesignSystem.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    ...DesignSystem.shadows.small,
+    marginBottom: DesignSystem.spacing.md,
+  },
+  appHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  appHeaderLeft: {
+    flex: 1,
+  },
+  appTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.light.text,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    marginBottom: 2,
+  },
+  appSubtitle: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
+    fontWeight: '500',
+  },
+  appHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DesignSystem.spacing.sm,
+  },
+  headerActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: DesignSystem.borderRadius.round,
+    backgroundColor: Colors.light.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    ...DesignSystem.shadows.small,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: Colors.light.error,
+    borderRadius: DesignSystem.borderRadius.round,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.light.background,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
 });

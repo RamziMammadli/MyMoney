@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  FlatList,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,10 +13,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Header } from '@/components/ui/header';
+import { AppHeader } from '@/components/ui/header';
 import { Input } from '@/components/ui/input';
 import { Colors, DesignSystem } from '@/constants/theme';
-import { Goal, StorageService } from '@/services/storage';
+import { StorageService } from '@/services/storage';
+
+interface Goal {
+  id: string;
+  title: string;
+  description: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline: string;
+  category: string;
+  isCompleted: boolean;
+  createdAt: string;
+}
 
 export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -183,44 +195,51 @@ export default function GoalsScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.modalBody}>
-          <Input
-            placeholder="Hədəf adı"
-            value={newGoal.title}
-            onChangeText={(text) => setNewGoal(prev => ({ ...prev, title: text }))}
-            style={styles.modalInput}
-          />
-          
-          <Input
-            placeholder="Təsvir (istəyə bağlı)"
-            value={newGoal.description}
-            onChangeText={(text) => setNewGoal(prev => ({ ...prev, description: text }))}
-            style={styles.modalInput}
-            multiline
-          />
-          
-          <Input
-            placeholder="Hədəf məbləği (₼)"
-            value={newGoal.targetAmount}
-            onChangeText={(text) => setNewGoal(prev => ({ ...prev, targetAmount: text }))}
-            keyboardType="numeric"
-            style={styles.modalInput}
-          />
-          
-          <Input
-            placeholder="Son tarix (YYYY-MM-DD)"
-            value={newGoal.deadline}
-            onChangeText={(text) => setNewGoal(prev => ({ ...prev, deadline: text }))}
-            style={styles.modalInput}
-          />
-          
-          <Input
-            placeholder="Kateqoriya"
-            value={newGoal.category}
-            onChangeText={(text) => setNewGoal(prev => ({ ...prev, category: text }))}
-            style={styles.modalInput}
-          />
-        </ScrollView>
+        <FlatList
+          style={styles.modalBody}
+          data={[1]} // Dummy data for FlatList
+          renderItem={() => (
+            <View>
+              <Input
+                placeholder="Hədəf adı"
+                value={newGoal.title}
+                onChangeText={(text) => setNewGoal(prev => ({ ...prev, title: text }))}
+                style={styles.modalInput}
+              />
+              
+              <Input
+                placeholder="Təsvir (istəyə bağlı)"
+                value={newGoal.description}
+                onChangeText={(text) => setNewGoal(prev => ({ ...prev, description: text }))}
+                style={styles.modalInput}
+                multiline
+              />
+              
+              <Input
+                placeholder="Hədəf məbləği (₼)"
+                value={newGoal.targetAmount}
+                onChangeText={(text) => setNewGoal(prev => ({ ...prev, targetAmount: text }))}
+                keyboardType="numeric"
+                style={styles.modalInput}
+              />
+              
+              <Input
+                placeholder="Son tarix (YYYY-MM-DD)"
+                value={newGoal.deadline}
+                onChangeText={(text) => setNewGoal(prev => ({ ...prev, deadline: text }))}
+                style={styles.modalInput}
+              />
+              
+              <Input
+                placeholder="Kateqoriya"
+                value={newGoal.category}
+                onChangeText={(text) => setNewGoal(prev => ({ ...prev, category: text }))}
+                style={styles.modalInput}
+              />
+            </View>
+          )}
+          showsVerticalScrollIndicator={false}
+        />
 
         <View style={styles.modalFooter}>
           <Button
@@ -251,18 +270,22 @@ export default function GoalsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header title="Hədəflər" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <AppHeader 
+        title="Hədəflər"
+        onSearchPress={() => {}}
+        onNotificationPress={() => {}}
+        onProfilePress={() => {}}
+      />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {goals.length > 0 ? (
-          <View style={styles.goalsList}>
-            {goals.map(renderGoalItem)}
-          </View>
-        ) : (
-          renderEmptyState()
-        )}
-      </ScrollView>
+      <FlatList
+        style={styles.content}
+        data={goals.length > 0 ? goals : []}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => renderGoalItem(item)}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmptyState}
+      />
 
       {goals.length > 0 && (
         <View style={styles.fabContainer}>
@@ -289,9 +312,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: DesignSystem.spacing.md,
     paddingBottom: DesignSystem.spacing.xl,
-  },
-  goalsList: {
-    gap: DesignSystem.spacing.md,
   },
   goalItem: {
     padding: DesignSystem.spacing.md,

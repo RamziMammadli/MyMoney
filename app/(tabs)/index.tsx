@@ -3,19 +3,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  FlatList,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AddTransactionModal } from '@/components/ui/add-transaction-modal';
 import { Button } from '@/components/ui/button';
 import { BalanceCard, Card } from '@/components/ui/card';
-import { BalanceHeader } from '@/components/ui/header';
+import { AppHeader } from '@/components/ui/header';
 import { Colors, DesignSystem, WalletColors } from '@/constants/theme';
 import { StorageService, Transaction } from '@/services/storage';
 
@@ -152,111 +151,119 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BalanceHeader
-        balance={balanceVisible ? totalBalance.toFixed(2) : "••••••"}
-        currency="₼"
-        onPress={() => setBalanceVisible(!balanceVisible)}
+    <View style={styles.container}>
+      <AppHeader 
+        onNotificationPress={() => console.log('Notifications pressed')}
+        onProfilePress={() => router.push('/profile')}
+        onSearchPress={() => console.log('Search pressed')}
+        notificationCount={3}
       />
-      
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.sectionTitle}>Sürətli Əməliyyatlar</Text>
-          <View style={styles.quickActionsGrid}>
-            {quickActions.map(renderQuickAction)}
+      <FlatList
+        style={styles.content}
+        data={[1]} // Dummy data for FlatList
+        renderItem={() => (
+          <View>
+            {/* Quick Actions */}
+            <View style={styles.quickActionsContainer}>
+              <Text style={styles.sectionTitle}>Sürətli Əməliyyatlar</Text>
+              <View style={styles.quickActionsGrid}>
+                {quickActions.map(renderQuickAction)}
+              </View>
+            </View>
+
+            {/* Financial Summary */}
+            <View style={styles.balanceCardsContainer}>
+              <Text style={styles.sectionTitle}>Maliyyə Xülasəsi</Text>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.balanceCardsScroll}
+                data={[
+                  { id: 'total', balance: balanceVisible ? totalBalance.toFixed(2) : "••••••", name: "Ümumi Balans" },
+                  { id: 'income', balance: balanceVisible ? monthlyIncome.toFixed(2) : "••••••", name: "Bu Ay Gəlir" },
+                  { id: 'expense', balance: balanceVisible ? monthlyExpenses.toFixed(2) : "••••••", name: "Bu Ay Xərc" }
+                ]}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <BalanceCard
+                    balance={item.balance}
+                    currency="₼"
+                    accountName={item.name}
+                  />
+                )}
+              />
+            </View>
+
+            {/* Recent Transactions */}
+            <View style={styles.recentTransactionsContainer}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Son Əməliyyatlar</Text>
+                <TouchableOpacity onPress={() => router.push('/transactions')}>
+                  <Text style={styles.seeAllText}>Hamısını Gör</Text>
+                </TouchableOpacity>
+              </View>
+              <Card style={styles.transactionsCard}>
+                {recentTransactions.length > 0 ? (
+                  recentTransactions.map(renderRecentTransaction)
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="receipt-outline" size={48} color={Colors.light.iconSecondary} />
+                    <Text style={styles.emptyStateText}>Hələ əməliyyat yoxdur</Text>
+                    <Text style={styles.emptyStateSubtext}>İlk əməliyyatınızı əlavə edin</Text>
+                  </View>
+                )}
+              </Card>
+            </View>
+
+            {/* Statistics */}
+            <View style={styles.statisticsContainer}>
+              <Text style={styles.sectionTitle}>Bu Ay</Text>
+              <View style={styles.statisticsGrid}>
+                <Card style={styles.statisticCard}>
+                  <View style={styles.statisticContent}>
+                    <Ionicons name="trending-up" size={24} color={Colors.light.success} />
+                    <Text style={styles.statisticValue}>+{monthlyIncome.toFixed(2)} ₼</Text>
+                    <Text style={styles.statisticLabel}>Gəlir</Text>
+                  </View>
+                </Card>
+                <Card style={styles.statisticCard}>
+                  <View style={styles.statisticContent}>
+                    <Ionicons name="trending-down" size={24} color={Colors.light.error} />
+                    <Text style={styles.statisticValue}>-{monthlyExpenses.toFixed(2)} ₼</Text>
+                    <Text style={styles.statisticLabel}>Xərc</Text>
+                  </View>
+                </Card>
+              </View>
+            </View>
+
+            {/* Financial Tips */}
+            <View style={styles.promotionsContainer}>
+              <Text style={styles.sectionTitle}>Maliyyə Məsləhətləri</Text>
+              <Card variant="gradient" style={styles.promotionCard}>
+                <LinearGradient
+                  colors={WalletColors.skyTrustGradient as [string, string]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.promotionGradient}
+                >
+                  <View style={styles.promotionContent}>
+                    <Text style={styles.promotionTitle}>Aylıq Büdcə Planlaşdırın</Text>
+                    <Text style={styles.promotionSubtitle}>Gəlir və xərclərinizi balanslaşdırın</Text>
+                    <Button
+                      title="Planlaşdır"
+                      variant="accent"
+                      size="small"
+                      onPress={() => {}}
+                      style={styles.promotionButton}
+                    />
+                  </View>
+                </LinearGradient>
+              </Card>
+            </View>
           </View>
-        </View>
-
-        {/* Financial Summary */}
-        <View style={styles.balanceCardsContainer}>
-          <Text style={styles.sectionTitle}>Maliyyə Xülasəsi</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.balanceCardsScroll}>
-            <BalanceCard
-              balance={balanceVisible ? totalBalance.toFixed(2) : "••••••"}
-              currency="₼"
-              accountName="Ümumi Balans"
-            />
-            <BalanceCard
-              balance={balanceVisible ? monthlyIncome.toFixed(2) : "••••••"}
-              currency="₼"
-              accountName="Bu Ay Gəlir"
-            />
-            <BalanceCard
-              balance={balanceVisible ? monthlyExpenses.toFixed(2) : "••••••"}
-              currency="₼"
-              accountName="Bu Ay Xərc"
-            />
-          </ScrollView>
-        </View>
-
-        {/* Recent Transactions */}
-        <View style={styles.recentTransactionsContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Son Əməliyyatlar</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Hamısını Gör</Text>
-            </TouchableOpacity>
-          </View>
-          <Card style={styles.transactionsCard}>
-            {recentTransactions.length > 0 ? (
-              recentTransactions.map(renderRecentTransaction)
-            ) : (
-              <View style={styles.emptyState}>
-                <Ionicons name="receipt-outline" size={48} color={Colors.light.iconSecondary} />
-                <Text style={styles.emptyStateText}>Hələ əməliyyat yoxdur</Text>
-                <Text style={styles.emptyStateSubtext}>İlk əməliyyatınızı əlavə edin</Text>
-              </View>
-            )}
-          </Card>
-        </View>
-
-        {/* Statistics */}
-        <View style={styles.statisticsContainer}>
-          <Text style={styles.sectionTitle}>Bu Ay</Text>
-          <View style={styles.statisticsGrid}>
-            <Card style={styles.statisticCard}>
-              <View style={styles.statisticContent}>
-                <Ionicons name="trending-up" size={24} color={Colors.light.success} />
-                <Text style={styles.statisticValue}>+{monthlyIncome.toFixed(2)} ₼</Text>
-                <Text style={styles.statisticLabel}>Gəlir</Text>
-              </View>
-            </Card>
-            <Card style={styles.statisticCard}>
-              <View style={styles.statisticContent}>
-                <Ionicons name="trending-down" size={24} color={Colors.light.error} />
-                <Text style={styles.statisticValue}>-{monthlyExpenses.toFixed(2)} ₼</Text>
-                <Text style={styles.statisticLabel}>Xərc</Text>
-              </View>
-            </Card>
-          </View>
-        </View>
-
-        {/* Financial Tips */}
-        <View style={styles.promotionsContainer}>
-          <Text style={styles.sectionTitle}>Maliyyə Məsləhətləri</Text>
-          <Card variant="gradient" style={styles.promotionCard}>
-            <LinearGradient
-              colors={WalletColors.skyTrustGradient as [string, string]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.promotionGradient}
-            >
-              <View style={styles.promotionContent}>
-                <Text style={styles.promotionTitle}>Aylıq Büdcə Planlaşdırın</Text>
-                <Text style={styles.promotionSubtitle}>Gəlir və xərclərinizi balanslaşdırın</Text>
-                <Button
-                  title="Planlaşdır"
-                  variant="accent"
-                  size="small"
-                  onPress={() => {}}
-                  style={styles.promotionButton}
-                />
-              </View>
-            </LinearGradient>
-          </Card>
-        </View>
-      </ScrollView>
+        )}
+        showsVerticalScrollIndicator={false}
+      />
 
       {/* Modals */}
       <AddTransactionModal
@@ -272,7 +279,7 @@ export default function HomeScreen() {
         onSave={(data) => handleAddTransaction({ ...data, type: 'expense' })}
         type="expense"
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

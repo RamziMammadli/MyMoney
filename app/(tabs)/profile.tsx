@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
     Alert,
+    FlatList,
     Platform,
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Header } from '@/components/ui/header';
+import { AppHeader } from '@/components/ui/header';
 import { Input } from '@/components/ui/input';
 import { Colors, DesignSystem } from '@/constants/theme';
 import { StorageService } from '@/services/storage';
@@ -85,26 +85,6 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleExportData = async () => {
-    try {
-      const transactions = await StorageService.getTransactions();
-      const goals = await StorageService.getGoals();
-      
-      const exportData = {
-        transactions,
-        goals,
-        profile,
-        exportDate: new Date().toISOString(),
-      };
-      
-      // Bu real app-də file system-ə yazılardı
-      console.log('Export Data:', JSON.stringify(exportData, null, 2));
-      Alert.alert('Uğurlu', 'Məlumatlar console-da görünür');
-    } catch (error) {
-      Alert.alert('Xəta', 'Məlumatlar eksport edilərkən xəta baş verdi');
-    }
-  };
-
   const getFieldLabel = (field: keyof UserProfile): string => {
     const labels = {
       name: 'Ad Soyad',
@@ -169,7 +149,6 @@ export default function ProfileScreen() {
             value={editValue}
             onChangeText={setEditValue}
             style={styles.modalInput}
-            autoFocus
           />
         </View>
 
@@ -209,109 +188,108 @@ export default function ProfileScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header title="Profil" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <AppHeader 
+        title="Profil"
+        onSearchPress={() => {}}
+        onNotificationPress={() => {}}
+        onProfilePress={() => {}}
+      />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* User Info */}
-        <Card style={styles.userCard}>
-          <View style={styles.userInfo}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={32} color={Colors.light.primary} />
+      <FlatList
+        style={styles.content}
+        data={[1]} // Dummy data for FlatList
+        renderItem={() => (
+          <View>
+            {/* User Info */}
+            <Card style={styles.userCard}>
+              <View style={styles.userInfo}>
+                <View style={styles.avatar}>
+                  <Ionicons name="person" size={32} color={Colors.light.primary} />
+                </View>
+                <View style={styles.userDetails}>
+                  <Text style={styles.userName}>{profile.name}</Text>
+                  <Text style={styles.userEmail}>{profile.email}</Text>
+                </View>
+              </View>
+            </Card>
+
+            {/* Stats */}
+            {renderStatsCard()}
+
+            {/* Profile Settings */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Profil Məlumatları</Text>
+              <Card style={styles.settingsCard}>
+                {renderProfileItem('name', 'person-outline')}
+                {renderProfileItem('email', 'mail-outline')}
+                {renderProfileItem('phone', 'call-outline')}
+              </Card>
             </View>
-            <View style={styles.userDetails}>
-              <Text style={styles.userName}>{profile.name}</Text>
-              <Text style={styles.userEmail}>{profile.email}</Text>
+
+            {/* App Settings */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>App Ayarları</Text>
+              <Card style={styles.settingsCard}>
+                {renderProfileItem('currency', 'cash-outline')}
+                {renderProfileItem('language', 'language-outline')}
+                {renderProfileItem('notifications', 'notifications-outline')}
+                {renderProfileItem('darkMode', 'moon-outline')}
+              </Card>
+            </View>
+
+            {/* Data Management */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Məlumat İdarəetməsi</Text>
+              <Card style={styles.settingsCard}>
+                <TouchableOpacity style={styles.profileItem} onPress={handleClearData}>
+                  <View style={styles.profileItemLeft}>
+                    <View style={styles.profileIcon}>
+                      <Ionicons name="trash-outline" size={20} color={Colors.light.error} />
+                    </View>
+                    <View style={styles.profileInfo}>
+                      <Text style={styles.profileLabel}>Bütün Məlumatları Təmizlə</Text>
+                      <Text style={styles.profileValue}>Geri alına bilməz</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
+                </TouchableOpacity>
+              </Card>
+            </View>
+
+            {/* App Info */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>App Haqqında</Text>
+              <Card style={styles.settingsCard}>
+                <View style={styles.profileItem}>
+                  <View style={styles.profileItemLeft}>
+                    <View style={styles.profileIcon}>
+                      <Ionicons name="information-circle-outline" size={20} color={Colors.light.info} />
+                    </View>
+                    <View style={styles.profileInfo}>
+                      <Text style={styles.profileLabel}>Versiya</Text>
+                      <Text style={styles.profileValue}>1.0.0</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.profileItem}>
+                  <View style={styles.profileItemLeft}>
+                    <View style={styles.profileIcon}>
+                      <Ionicons name="code-outline" size={20} color={Colors.light.info} />
+                    </View>
+                    <View style={styles.profileInfo}>
+                      <Text style={styles.profileLabel}>Developer</Text>
+                      <Text style={styles.profileValue}>MyMoney Team</Text>
+                    </View>
+                  </View>
+                </View>
+              </Card>
             </View>
           </View>
-        </Card>
-
-        {/* Stats */}
-        {renderStatsCard()}
-
-        {/* Profile Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profil Məlumatları</Text>
-          <Card style={styles.settingsCard}>
-            {renderProfileItem('name', 'person-outline')}
-            {renderProfileItem('email', 'mail-outline')}
-            {renderProfileItem('phone', 'call-outline')}
-          </Card>
-        </View>
-
-        {/* App Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Ayarları</Text>
-          <Card style={styles.settingsCard}>
-            {renderProfileItem('currency', 'cash-outline')}
-            {renderProfileItem('language', 'language-outline')}
-            {renderProfileItem('notifications', 'notifications-outline')}
-            {renderProfileItem('darkMode', 'moon-outline')}
-          </Card>
-        </View>
-
-        {/* Data Management */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Məlumat İdarəetməsi</Text>
-          <Card style={styles.settingsCard}>
-            <TouchableOpacity style={styles.profileItem} onPress={handleExportData}>
-              <View style={styles.profileItemLeft}>
-                <View style={styles.profileIcon}>
-                  <Ionicons name="download-outline" size={20} color={Colors.light.success} />
-                </View>
-                <View style={styles.profileInfo}>
-                  <Text style={styles.profileLabel}>Məlumatları Eksport Et</Text>
-                  <Text style={styles.profileValue}>JSON formatında</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.profileItem} onPress={handleClearData}>
-              <View style={styles.profileItemLeft}>
-                <View style={styles.profileIcon}>
-                  <Ionicons name="trash-outline" size={20} color={Colors.light.error} />
-                </View>
-                <View style={styles.profileInfo}>
-                  <Text style={styles.profileLabel}>Bütün Məlumatları Təmizlə</Text>
-                  <Text style={styles.profileValue}>Geri alına bilməz</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={Colors.light.textSecondary} />
-            </TouchableOpacity>
-          </Card>
-        </View>
-
-        {/* App Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App Haqqında</Text>
-          <Card style={styles.settingsCard}>
-            <View style={styles.profileItem}>
-              <View style={styles.profileItemLeft}>
-                <View style={styles.profileIcon}>
-                  <Ionicons name="information-circle-outline" size={20} color={Colors.light.info} />
-                </View>
-                <View style={styles.profileInfo}>
-                  <Text style={styles.profileLabel}>Versiya</Text>
-                  <Text style={styles.profileValue}>1.0.0</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.profileItem}>
-              <View style={styles.profileItemLeft}>
-                <View style={styles.profileIcon}>
-                  <Ionicons name="code-outline" size={20} color={Colors.light.info} />
-                </View>
-                <View style={styles.profileInfo}>
-                  <Text style={styles.profileLabel}>Developer</Text>
-                  <Text style={styles.profileValue}>MyMoney Team</Text>
-                </View>
-              </View>
-            </View>
-          </Card>
-        </View>
-      </ScrollView>
+        )}
+        showsVerticalScrollIndicator={false}
+      />
 
       {showEditModal && renderEditModal()}
     </SafeAreaView>

@@ -165,6 +165,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: Colors.light.text,
-    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Displ' : 'Inter',
   },
 });

@@ -17,20 +17,23 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarItemStyle: {
+          width: 85,
+        },
         tabBarStyle: {
           backgroundColor: Colors[colorScheme ?? 'light'].background,
           borderTopColor: Colors[colorScheme ?? 'light'].border,
           borderTopWidth: 1,
-          paddingTop: Platform.OS === 'ios' ? DesignSystem.spacing.sm : DesignSystem.spacing.xs,
-          paddingBottom: Platform.OS === 'ios' ? DesignSystem.spacing.md : DesignSystem.spacing.sm,
-          height: Platform.OS === 'ios' ? 90 : 70,
+          paddingTop: Platform.OS === 'ios' ? DesignSystem.spacing.xs : DesignSystem.spacing.xs,
+          paddingBottom: Platform.OS === 'ios' ? DesignSystem.spacing.sm : DesignSystem.spacing.xs,
+          height: Platform.OS === 'ios' ? 80 : 60,
           ...DesignSystem.shadows.small,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: '600',
           fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
-          marginTop: DesignSystem.spacing.xs,
+          marginTop: 2,
         },
       }}>
       <Tabs.Screen
@@ -47,13 +50,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="expenses"
+        name="transactions"
         options={{
-          title: 'Xərclər',
+          title: 'Əməliyyatlar',
           tabBarIcon: ({ color, focused }) => (
             <IconSymbol 
               size={focused ? 28 : 24} 
-              name="chart.pie.fill" 
+              name="list.bullet" 
               color={color} 
             />
           ),
@@ -75,7 +78,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="goals"
         options={{
-          title: 'Hədəflər',
+          title: 'Hədəflərim',
           tabBarIcon: ({ color, focused }) => (
             <IconSymbol 
               size={focused ? 28 : 24} 

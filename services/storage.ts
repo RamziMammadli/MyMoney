@@ -177,26 +177,26 @@ export class StorageService {
   // Categories
   static getExpenseCategories() {
     return [
-      { id: 'food', name: 'Yemək', icon: 'restaurant' as const },
-      { id: 'transport', name: 'Nəqliyyat', icon: 'car' as const },
-      { id: 'shopping', name: 'Alış-veriş', icon: 'storefront' as const },
-      { id: 'utilities', name: 'Komunal', icon: 'flash' as const },
-      { id: 'entertainment', name: 'Əyləncə', icon: 'game-controller' as const },
-      { id: 'health', name: 'Sağlamlıq', icon: 'medical' as const },
-      { id: 'education', name: 'Təhsil', icon: 'school' as const },
-      { id: 'clothing', name: 'Geyim', icon: 'shirt' as const },
-      { id: 'other', name: 'Digər', icon: 'ellipsis-horizontal' as const },
+      { id: 'yemək', name: 'Yemək', icon: 'restaurant' as const },
+      { id: 'nəqliyyat', name: 'Nəqliyyat', icon: 'car' as const },
+      { id: 'alış-veriş', name: 'Alış-veriş', icon: 'storefront' as const },
+      { id: 'komunal', name: 'Komunal', icon: 'flash' as const },
+      { id: 'əyləncə', name: 'Əyləncə', icon: 'game-controller' as const },
+      { id: 'sağlamlıq', name: 'Sağlamlıq', icon: 'medical' as const },
+      { id: 'təhsil', name: 'Təhsil', icon: 'school' as const },
+      { id: 'geyim', name: 'Geyim', icon: 'shirt' as const },
+      { id: 'digər', name: 'Digər', icon: 'ellipsis-horizontal' as const },
     ];
   }
 
   static getIncomeCategories() {
     return [
-      { id: 'salary', name: 'Maaş', icon: 'briefcase' as const },
+      { id: 'maaş', name: 'Maaş', icon: 'briefcase' as const },
       { id: 'freelance', name: 'Freelance', icon: 'laptop' as const },
-      { id: 'investment', name: 'İnvestisiya', icon: 'trending-up' as const },
-      { id: 'gift', name: 'Hədiyyə', icon: 'gift' as const },
-      { id: 'sale', name: 'Satış', icon: 'cash' as const },
-      { id: 'other', name: 'Digər', icon: 'ellipsis-horizontal' as const },
+      { id: 'investisiya', name: 'İnvestisiya', icon: 'trending-up' as const },
+      { id: 'hədiyyə', name: 'Hədiyyə', icon: 'gift' as const },
+      { id: 'satış', name: 'Satış', icon: 'cash' as const },
+      { id: 'digər', name: 'Digər', icon: 'ellipsis-horizontal' as const },
     ];
   }
 
@@ -249,6 +249,21 @@ export class StorageService {
       await AsyncStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(filteredDebts));
     } catch (error) {
       console.error('Error deleting debt:', error);
+      throw error;
+    }
+  }
+
+  // Clear all data
+  static async clearAllData(): Promise<void> {
+    try {
+      await AsyncStorage.multiRemove([
+        STORAGE_KEYS.TRANSACTIONS,
+        STORAGE_KEYS.GOALS,
+        STORAGE_KEYS.DEBTS,
+        STORAGE_KEYS.SETTINGS,
+      ]);
+    } catch (error) {
+      console.error('Error clearing data:', error);
       throw error;
     }
   }

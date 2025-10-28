@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
+  FlatList,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/card';
-import { Header } from '@/components/ui/header';
+import { AppHeader } from '@/components/ui/header';
 import { Colors, DesignSystem } from '@/constants/theme';
 import { StorageService, Transaction } from '@/services/storage';
 
@@ -23,12 +23,12 @@ interface UtilityCategory {
 }
 
 const utilityCategories: UtilityCategory[] = [
-  { id: 'electricity', name: 'İşıq', icon: 'flash', color: '#FFD700' },
-  { id: 'water', name: 'Su', icon: 'water', color: '#00BFFF' },
-  { id: 'gas', name: 'Qaz', icon: 'flame', color: '#FF4500' },
+  { id: 'işıq', name: 'İşıq', icon: 'flash', color: '#FFD700' },
+  { id: 'su', name: 'Su', icon: 'water', color: '#00BFFF' },
+  { id: 'qaz', name: 'Qaz', icon: 'flame', color: '#FF4500' },
   { id: 'internet', name: 'İnternet', icon: 'wifi', color: '#32CD32' },
-  { id: 'phone', name: 'Telefon', icon: 'call', color: '#9370DB' },
-  { id: 'building', name: 'Bina Aidatı', icon: 'business', color: '#FF6347' },
+  { id: 'telefon', name: 'Telefon', icon: 'call', color: '#9370DB' },
+  { id: 'bina', name: 'Bina Aidatı', icon: 'business', color: '#FF6347' },
 ];
 
 export default function UtilitiesScreen() {
@@ -49,10 +49,21 @@ export default function UtilitiesScreen() {
   const loadUtilities = async () => {
     try {
       const allTransactions = await StorageService.getTransactions();
-      // Yalnız komunal kateqoriyasındakı xərcləri göstər
+      
+      // Komunal kateqoriyasındakı və komunal ilə bağlı xərcləri göstər
       const utilityTransactions = allTransactions.filter(t => 
-        t.type === 'expense' && t.category === 'utilities'
+        t.type === 'expense' && (
+          t.category === 'komunal' ||
+          t.description.toLowerCase().includes('komunal') ||
+          t.description.toLowerCase().includes('işıq') ||
+          t.description.toLowerCase().includes('su') ||
+          t.description.toLowerCase().includes('qaz') ||
+          t.description.toLowerCase().includes('internet') ||
+          t.description.toLowerCase().includes('telefon') ||
+          t.description.toLowerCase().includes('bina')
+        )
       );
+      
       setUtilities(utilityTransactions);
     } catch (error) {
       console.error('Error loading utilities:', error);
@@ -127,23 +138,32 @@ export default function UtilitiesScreen() {
     
     return (
       <Card key={utility.id} style={styles.utilityItem}>
-        <View style={styles.utilityLeft}>
-          <View style={[styles.utilityIcon, { backgroundColor: category.color + '20' }]}>
-            <Ionicons name={category.icon} size={20} color={category.color} />
+        <View style={styles.utilityContent}>
+          {/* Left Side - Icon and Info */}
+          <View style={styles.utilityLeft}>
+            <View style={[styles.utilityIcon, { backgroundColor: category.color + '20' }]}>
+              <Ionicons name={category.icon} size={24} color={category.color} />
+            </View>
+            <View style={styles.utilityInfo}>
+              <Text style={styles.utilityDescription} numberOfLines={1}>
+                {utility.description}
+              </Text>
+              <Text style={styles.utilityCategory}>{category.name}</Text>
+              <Text style={styles.utilityDate}>
+                {date.toLocaleDateString('az-AZ', { 
+                  day: '2-digit', 
+                  month: '2-digit', 
+                  year: 'numeric' 
+                })}
+              </Text>
+            </View>
           </View>
-          <View style={styles.utilityInfo}>
-            <Text style={styles.utilityDescription}>{utility.description}</Text>
-            <Text style={styles.utilityCategory}>{category.name}</Text>
-            <Text style={styles.utilityDate}>
-              {date.toLocaleDateString('az-AZ', { 
-                day: '2-digit', 
-                month: '2-digit', 
-                year: 'numeric' 
-              })}
-            </Text>
+          
+          {/* Right Side - Amount */}
+          <View style={styles.utilityRight}>
+            <Text style={styles.utilityAmount}>-{utility.amount.toFixed(2)} ₼</Text>
           </View>
         </View>
-        <Text style={styles.utilityAmount}>{utility.amount.toFixed(2)} ₼</Text>
       </Card>
     );
   };
@@ -199,58 +219,75 @@ export default function UtilitiesScreen() {
   const sortedMonths = Object.keys(monthlyUtilities).sort().reverse();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header title="Komunal Xərclər" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <AppHeader 
+        title="Komunal"
+        onSearchPress={() => {}}
+        onNotificationPress={() => {}}
+        onProfilePress={() => {}}
+      />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {utilities.length > 0 ? (
-          <>
-            {/* Month Selector */}
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.monthSelector}
-            >
-              {sortedMonths.map(monthKey => (
-                <TouchableOpacity
-                  key={monthKey}
-                  style={[
-                    styles.monthButton,
-                    selectedMonth === monthKey && styles.selectedMonthButton
-                  ]}
-                  onPress={() => setSelectedMonth(monthKey)}
-                >
-                  <Text style={[
-                    styles.monthButtonText,
-                    selectedMonth === monthKey && styles.selectedMonthButtonText
-                  ]}>
-                    {getMonthName(monthKey)}
-                  </Text>
-                  <Text style={[
-                    styles.monthAmount,
-                    selectedMonth === monthKey && styles.selectedMonthAmount
-                  ]}>
-                    {getTotalForMonth(monthKey).toFixed(0)} ₼
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+      <FlatList
+        style={styles.content}
+        data={utilities.length > 0 ? [1] : []} // Dummy data for FlatList
+        renderItem={() => (
+          <View style={styles.scrollContent}>
+            {utilities.length > 0 ? (
+              <>
+                {/* Month Selector */}
+                <FlatList 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.monthSelector}
+                  data={sortedMonths}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item: monthKey }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.monthButton,
+                        selectedMonth === monthKey && styles.selectedMonthButton
+                      ]}
+                      onPress={() => setSelectedMonth(monthKey)}
+                    >
+                      <Text style={[
+                        styles.monthButtonText,
+                        selectedMonth === monthKey && styles.selectedMonthButtonText
+                      ]}>
+                        {getMonthName(monthKey)}
+                      </Text>
+                      <Text style={[
+                        styles.monthAmount,
+                        selectedMonth === monthKey && styles.selectedMonthAmount
+                      ]}>
+                        {getTotalForMonth(monthKey).toFixed(0)} ₼
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
 
-            {/* Month Summary */}
-            {renderMonthSummary()}
+                {/* Month Summary */}
+                {renderMonthSummary()}
 
-            {/* Utilities List */}
-            {selectedMonth && monthlyUtilities[selectedMonth] && (
-              <View style={styles.utilitiesList}>
-                <Text style={styles.sectionTitle}>Xərclər</Text>
-                {monthlyUtilities[selectedMonth].map(renderUtilityItem)}
-              </View>
+                {/* Utilities List */}
+                {selectedMonth && monthlyUtilities[selectedMonth] && (
+                  <View style={styles.utilitiesList}>
+                    <Text style={styles.sectionTitle}>Xərclər</Text>
+                    <FlatList
+                      data={monthlyUtilities[selectedMonth]}
+                      keyExtractor={(item) => item.id}
+                      renderItem={({ item }) => renderUtilityItem(item)}
+                      showsVerticalScrollIndicator={false}
+                    />
+                  </View>
+                )}
+              </>
+            ) : (
+              renderEmptyState()
             )}
-          </>
-        ) : (
-          renderEmptyState()
+          </View>
         )}
-      </ScrollView>
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 }
@@ -265,14 +302,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: DesignSystem.spacing.md,
     paddingBottom: DesignSystem.spacing.xl,
   },
+  scrollContent: {
+    flex: 1,
+  },
   monthSelector: {
     marginBottom: DesignSystem.spacing.md,
   },
   monthButton: {
-    backgroundColor: Colors.light.backgroundSecondary,
+    backgroundColor: Colors.light.surface,
     paddingHorizontal: DesignSystem.spacing.md,
     paddingVertical: DesignSystem.spacing.sm,
-    borderRadius: DesignSystem.borderRadius.md,
+    borderRadius: DesignSystem.borderRadius.medium,
     marginRight: DesignSystem.spacing.sm,
     alignItems: 'center',
     minWidth: 100,
@@ -326,7 +366,7 @@ const styles = StyleSheet.create({
   categoryIcon: {
     width: 32,
     height: 32,
-    borderRadius: DesignSystem.borderRadius.sm,
+    borderRadius: DesignSystem.borderRadius.small,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: DesignSystem.spacing.sm,
@@ -354,21 +394,24 @@ const styles = StyleSheet.create({
     marginBottom: DesignSystem.spacing.md,
   },
   utilityItem: {
+    marginBottom: DesignSystem.spacing.sm,
+  },
+  utilityContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: DesignSystem.spacing.md,
-    marginBottom: DesignSystem.spacing.sm,
   },
   utilityLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: DesignSystem.spacing.md,
   },
   utilityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: DesignSystem.borderRadius.md,
+    width: 48,
+    height: 48,
+    borderRadius: DesignSystem.borderRadius.medium,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: DesignSystem.spacing.md,
@@ -376,29 +419,37 @@ const styles = StyleSheet.create({
   utilityInfo: {
     flex: 1,
   },
+  utilityRight: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   utilityDescription: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.light.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
-    marginBottom: 2,
+    marginBottom: 4,
+    lineHeight: 20,
   },
   utilityCategory: {
     fontSize: 14,
     color: Colors.light.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
-    marginBottom: 2,
+    marginBottom: 4,
+    lineHeight: 18,
   },
   utilityDate: {
     fontSize: 12,
     color: Colors.light.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
+    lineHeight: 16,
   },
   utilityAmount: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: Colors.light.error,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+    textAlign: 'right',
   },
   emptyState: {
     alignItems: 'center',

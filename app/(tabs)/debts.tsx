@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  FlatList,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Header } from '@/components/ui/header';
+import { AppHeader } from '@/components/ui/header';
 import { Input } from '@/components/ui/input';
 import { Colors, DesignSystem } from '@/constants/theme';
 import { Debt, StorageService } from '@/services/storage';
@@ -22,6 +22,9 @@ import { Debt, StorageService } from '@/services/storage';
 export default function DebtsScreen() {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [filteredDebts, setFilteredDebts] = useState<Debt[]>([]);
   const [newDebt, setNewDebt] = useState({
     title: '',
     description: '',
@@ -38,9 +41,59 @@ export default function DebtsScreen() {
     try {
       const savedDebts = await StorageService.getDebts();
       setDebts(savedDebts);
+      // Always show all debts initially, then filter if needed
+      setFilteredDebts(savedDebts);
     } catch (error) {
       console.error('Error loading debts:', error);
     }
+  };
+
+  const filterDebtsByDate = (debtsList: Debt[], year: number, month: number) => {
+    const filtered = debtsList.filter(debt => {
+      const dueDate = new Date(debt.dueDate);
+      const debtYear = dueDate.getFullYear();
+      const debtMonth = dueDate.getMonth() + 1;
+      
+      // Show debts that are due in the selected month/year or before
+      return debtYear < year || (debtYear === year && debtMonth <= month);
+    });
+    
+    // If no debts match the filter, show all debts
+    if (filtered.length === 0 && debtsList.length > 0) {
+      setFilteredDebts(debtsList);
+    } else {
+      setFilteredDebts(filtered);
+    }
+  };
+
+  const handleFilterDebts = () => {
+    filterDebtsByDate(debts, selectedYear, selectedMonth);
+  };
+
+  const getYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 5; i <= currentYear + 5; i++) {
+      years.push(i);
+    }
+    return years;
+  };
+
+  const getMonthOptions = () => {
+    return [
+      { value: 1, label: 'Yanvar' },
+      { value: 2, label: 'Fevral' },
+      { value: 3, label: 'Mart' },
+      { value: 4, label: 'Aprel' },
+      { value: 5, label: 'May' },
+      { value: 6, label: 'İyun' },
+      { value: 7, label: 'İyul' },
+      { value: 8, label: 'Avqust' },
+      { value: 9, label: 'Sentyabr' },
+      { value: 10, label: 'Oktyabr' },
+      { value: 11, label: 'Noyabr' },
+      { value: 12, label: 'Dekabr' },
+    ];
   };
 
   const handleAddDebt = async () => {
@@ -244,44 +297,51 @@ export default function DebtsScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.modalBody}>
-          <Input
-            placeholder="Borç adı"
-            value={newDebt.title}
-            onChangeText={(text) => setNewDebt(prev => ({ ...prev, title: text }))}
-            style={styles.modalInput}
-          />
-          
-          <Input
-            placeholder="Təsvir (istəyə bağlı)"
-            value={newDebt.description}
-            onChangeText={(text) => setNewDebt(prev => ({ ...prev, description: text }))}
-            style={styles.modalInput}
-            multiline
-          />
-          
-          <Input
-            placeholder="Məbləğ (₼)"
-            value={newDebt.amount}
-            onChangeText={(text) => setNewDebt(prev => ({ ...prev, amount: text }))}
-            keyboardType="numeric"
-            style={styles.modalInput}
-          />
-          
-          <Input
-            placeholder="Borç verən"
-            value={newDebt.creditor}
-            onChangeText={(text) => setNewDebt(prev => ({ ...prev, creditor: text }))}
-            style={styles.modalInput}
-          />
-          
-          <Input
-            placeholder="Son tarix (YYYY-MM-DD)"
-            value={newDebt.dueDate}
-            onChangeText={(text) => setNewDebt(prev => ({ ...prev, dueDate: text }))}
-            style={styles.modalInput}
-          />
-        </ScrollView>
+        <FlatList
+          style={styles.modalBody}
+          data={[1]} // Dummy data for FlatList
+          renderItem={() => (
+            <View>
+              <Input
+                placeholder="Borç adı"
+                value={newDebt.title}
+                onChangeText={(text) => setNewDebt(prev => ({ ...prev, title: text }))}
+                style={styles.modalInput}
+              />
+              
+              <Input
+                placeholder="Təsvir (istəyə bağlı)"
+                value={newDebt.description}
+                onChangeText={(text) => setNewDebt(prev => ({ ...prev, description: text }))}
+                style={styles.modalInput}
+                multiline
+              />
+              
+              <Input
+                placeholder="Məbləğ (₼)"
+                value={newDebt.amount}
+                onChangeText={(text) => setNewDebt(prev => ({ ...prev, amount: text }))}
+                keyboardType="numeric"
+                style={styles.modalInput}
+              />
+              
+              <Input
+                placeholder="Borç verən"
+                value={newDebt.creditor}
+                onChangeText={(text) => setNewDebt(prev => ({ ...prev, creditor: text }))}
+                style={styles.modalInput}
+              />
+              
+              <Input
+                placeholder="Son tarix (YYYY-MM-DD)"
+                value={newDebt.dueDate}
+                onChangeText={(text) => setNewDebt(prev => ({ ...prev, dueDate: text }))}
+                style={styles.modalInput}
+              />
+            </View>
+          )}
+          showsVerticalScrollIndicator={false}
+        />
 
         <View style={styles.modalFooter}>
           <Button
@@ -311,55 +371,133 @@ export default function DebtsScreen() {
     </View>
   );
 
-  const totalDebt = debts.reduce((sum, debt) => sum + debt.amount, 0);
-  const totalPaid = debts.reduce((sum, debt) => sum + debt.paidAmount, 0);
+  const totalDebt = filteredDebts.reduce((sum, debt) => sum + debt.amount, 0);
+  const totalPaid = filteredDebts.reduce((sum, debt) => sum + debt.paidAmount, 0);
   const totalRemaining = totalDebt - totalPaid;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Header title="Borclar" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <AppHeader 
+        title="Borclar"
+        onSearchPress={() => {}}
+        onNotificationPress={() => {}}
+        onProfilePress={() => {}}
+      />
       
-      {debts.length > 0 && (
-        <View style={styles.summaryContainer}>
-          <Card style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Ümumi Borç:</Text>
-              <Text style={styles.summaryValue}>{totalDebt.toFixed(2)} ₼</Text>
+      <FlatList
+        style={styles.content}
+        data={filteredDebts}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => renderDebtItem(item)}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmptyState}
+        ListHeaderComponent={() => (
+          <View>
+            {/* Filter Controls */}
+            <View style={styles.filterContainer}>
+              <Card style={styles.filterCard}>
+                <View style={styles.filterRow}>
+                  {/* Year Selector */}
+                  <View style={styles.filterItem}>
+                    <Text style={styles.filterLabel}>İl:</Text>
+                    <TouchableOpacity
+                      style={styles.filterButton}
+                      onPress={() => {
+                        Alert.alert(
+                          'İl Seçin',
+                          '',
+                          getYearOptions().map(year => ({
+                            text: year.toString(),
+                            onPress: () => setSelectedYear(year),
+                          }))
+                        );
+                      }}
+                    >
+                      <Text style={styles.filterButtonText}>{selectedYear}</Text>
+                      <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Month Selector */}
+                  <View style={styles.filterItem}>
+                    <Text style={styles.filterLabel}>Ay:</Text>
+                    <TouchableOpacity
+                      style={styles.filterButton}
+                      onPress={() => {
+                        Alert.alert(
+                          'Ay Seçin',
+                          '',
+                          getMonthOptions().map(month => ({
+                            text: month.label,
+                            onPress: () => setSelectedMonth(month.value),
+                          }))
+                        );
+                      }}
+                    >
+                      <Text style={styles.filterButtonText}>
+                        {getMonthOptions().find(m => m.value === selectedMonth)?.label}
+                      </Text>
+                      <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Filter Button */}
+                  <TouchableOpacity
+                    style={styles.applyFilterButton}
+                    onPress={handleFilterDebts}
+                  >
+                    <Ionicons name="filter" size={16} color={Colors.light.background} />
+                    <Text style={styles.applyFilterButtonText}>Axtar</Text>
+                  </TouchableOpacity>
+                </View>
+              </Card>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Ödənilən:</Text>
-              <Text style={styles.summaryValue}>{totalPaid.toFixed(2)} ₼</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Qalan:</Text>
-              <Text style={[styles.summaryValue, styles.remainingAmount]}>
-                {totalRemaining.toFixed(2)} ₼
+
+            {/* Summary */}
+            {filteredDebts.length > 0 && (
+              <View style={styles.summaryContainer}>
+                <Card style={styles.summaryCard}>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Ümumi Borç:</Text>
+                    <Text style={styles.summaryValue}>{totalDebt.toFixed(2)} ₼</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Ödənilən:</Text>
+                    <Text style={styles.summaryValue}>{totalPaid.toFixed(2)} ₼</Text>
+                  </View>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Qalan:</Text>
+                    <Text style={[styles.summaryValue, styles.remainingAmount]}>
+                      {totalRemaining.toFixed(2)} ₼
+                    </Text>
+                  </View>
+                </Card>
+              </View>
+            )}
+
+            {/* Section Title */}
+            <View style={styles.debtsContainer}>
+              <Text style={styles.sectionTitle}>
+                Borclar ({filteredDebts.length})
               </Text>
             </View>
-          </Card>
-        </View>
-      )}
-      
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {debts.length > 0 ? (
-          <View style={styles.debtsList}>
-            {debts.map(renderDebtItem)}
           </View>
-        ) : (
-          renderEmptyState()
         )}
-      </ScrollView>
-
-      {debts.length > 0 && (
-        <View style={styles.fabContainer}>
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => setShowAddDebtModal(true)}
-          >
-            <Ionicons name="add" size={24} color={Colors.light.background} />
-          </TouchableOpacity>
-        </View>
-      )}
+        ListFooterComponent={() => (
+          <View style={styles.footerContainer}>
+            {filteredDebts.length > 0 && (
+              <View style={styles.fabContainer}>
+                <TouchableOpacity
+                  style={styles.fab}
+                  onPress={() => setShowAddDebtModal(true)}
+                >
+                  <Ionicons name="add" size={24} color={Colors.light.background} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+      />
 
       {showAddDebtModal && renderAddDebtModal()}
     </SafeAreaView>
@@ -372,7 +510,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   summaryContainer: {
-    paddingHorizontal: DesignSystem.spacing.md,
     paddingBottom: DesignSystem.spacing.md,
   },
   summaryCard: {
@@ -401,10 +538,76 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: DesignSystem.spacing.md,
+  },
+  footerContainer: {
     paddingBottom: DesignSystem.spacing.xl,
   },
-  debtsList: {
-    gap: DesignSystem.spacing.md,
+  debtsContainer: {
+    marginBottom: DesignSystem.spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: DesignSystem.spacing.md,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
+  },
+  filterContainer: {
+    marginBottom: DesignSystem.spacing.md,
+    justifyContent: 'center',
+  },
+  filterCard: {
+    padding: DesignSystem.spacing.xs,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  filterItem: {
+    flex: 1,
+    marginRight: DesignSystem.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: DesignSystem.spacing.xs,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.light.surface,
+    paddingHorizontal: DesignSystem.spacing.md,
+    paddingVertical: DesignSystem.spacing.sm,
+    borderRadius: DesignSystem.borderRadius.medium,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: Colors.light.text,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
+  },
+  applyFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.primary,
+    paddingHorizontal: DesignSystem.spacing.md,
+    paddingVertical: DesignSystem.spacing.sm,
+    borderRadius: DesignSystem.borderRadius.medium,
+    marginLeft: DesignSystem.spacing.sm,
+  },
+  applyFilterButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.background,
+    marginLeft: DesignSystem.spacing.xs,
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   debtItem: {
     padding: DesignSystem.spacing.md,
