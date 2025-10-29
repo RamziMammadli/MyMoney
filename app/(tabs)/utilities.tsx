@@ -1,18 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  FlatList,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    FlatList,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/ui/card';
 import { AppHeader } from '@/components/ui/header';
-import { Colors, DesignSystem } from '@/constants/theme';
+import { DesignSystem } from '@/constants/theme';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 import { StorageService, Transaction } from '@/services/storage';
 
 interface UtilityCategory {
@@ -32,6 +34,9 @@ const utilityCategories: UtilityCategory[] = [
 ];
 
 export default function UtilitiesScreen() {
+  const { t, language, currencySymbol } = useLanguage();
+  const colors = useThemedColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [utilities, setUtilities] = useState<Transaction[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [monthlyUtilities, setMonthlyUtilities] = useState<{[key: string]: Transaction[]}>({});
@@ -93,11 +98,22 @@ export default function UtilitiesScreen() {
 
   const getMonthName = (monthKey: string) => {
     const [year, month] = monthKey.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('az-AZ', { 
-      year: 'numeric', 
-      month: 'long' 
-    });
+    const monthNum = parseInt(month);
+    const monthNames: { [key: number]: string } = {
+      1: t.utilities.january,
+      2: t.utilities.february,
+      3: t.utilities.march,
+      4: t.utilities.april,
+      5: t.utilities.may,
+      6: t.utilities.june,
+      7: t.utilities.july,
+      8: t.utilities.august,
+      9: t.utilities.september,
+      10: t.utilities.october,
+      11: t.utilities.november,
+      12: t.utilities.december,
+    };
+    return `${monthNames[monthNum]} ${year}`;
   };
 
   const getUtilityCategory = (description: string) => {
@@ -148,9 +164,16 @@ export default function UtilitiesScreen() {
               <Text style={styles.utilityDescription} numberOfLines={1}>
                 {utility.description}
               </Text>
-              <Text style={styles.utilityCategory}>{category.name}</Text>
+              <Text style={styles.utilityCategory}>
+                {category.id === 'işıq' ? t.utilities.electricity :
+                 category.id === 'su' ? t.utilities.water :
+                 category.id === 'qaz' ? t.utilities.gas :
+                 category.id === 'internet' ? t.utilities.internet :
+                 category.id === 'telefon' ? t.utilities.phone :
+                 category.id === 'bina' ? t.utilities.building : category.name}
+              </Text>
               <Text style={styles.utilityDate}>
-                {date.toLocaleDateString('az-AZ', { 
+                {date.toLocaleDateString(language === 'az' ? 'az-AZ' : language === 'ru' ? 'ru-RU' : 'en-US', { 
                   day: '2-digit', 
                   month: '2-digit', 
                   year: 'numeric' 
@@ -161,7 +184,7 @@ export default function UtilitiesScreen() {
           
           {/* Right Side - Amount */}
           <View style={styles.utilityRight}>
-            <Text style={styles.utilityAmount}>-{utility.amount.toFixed(2)} ₼</Text>
+            <Text style={styles.utilityAmount}>-{utility.amount.toFixed(2)} {currencySymbol}</Text>
           </View>
         </View>
       </Card>
@@ -179,7 +202,7 @@ export default function UtilitiesScreen() {
     return (
       <Card style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>
-          {getMonthName(selectedMonth)} - Ümumi: {totalAmount.toFixed(2)} ₼
+          {getMonthName(selectedMonth)} - {t.utilities.monthTotal} {totalAmount.toFixed(2)} {currencySymbol}
         </Text>
         
         <View style={styles.categorySummary}>
@@ -193,9 +216,16 @@ export default function UtilitiesScreen() {
                   <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
                     <Ionicons name={category.icon} size={16} color={category.color} />
                   </View>
-                  <Text style={styles.categoryName}>{category.name}</Text>
+                  <Text style={styles.categoryName}>
+                    {category.id === 'işıq' ? t.utilities.electricity :
+                     category.id === 'su' ? t.utilities.water :
+                     category.id === 'qaz' ? t.utilities.gas :
+                     category.id === 'internet' ? t.utilities.internet :
+                     category.id === 'telefon' ? t.utilities.phone :
+                     category.id === 'bina' ? t.utilities.building : category.name}
+                  </Text>
                 </View>
-                <Text style={styles.categoryAmount}>{categoryTotal.toFixed(2)} ₼</Text>
+                <Text style={styles.categoryAmount}>{categoryTotal.toFixed(2)} {currencySymbol}</Text>
               </View>
             );
           })}
@@ -207,11 +237,11 @@ export default function UtilitiesScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIcon}>
-        <Ionicons name="flash-outline" size={64} color={Colors.light.textSecondary} />
+        <Ionicons name="flash-outline" size={64} color={colors.textSecondary} />
       </View>
-      <Text style={styles.emptyTitle}>Hələ komunal xərc yoxdur</Text>
+      <Text style={styles.emptyTitle}>{t.utilities.noUtilities}</Text>
       <Text style={styles.emptySubtitle}>
-        Komunal xərclərinizi əlavə etmək üçün ana səhifədəki "Xərc Əlavə" düyməsinə basın və kateqoriya olaraq "Komunal" seçin
+        {t.home.addExpense}
       </Text>
     </View>
   );
@@ -221,7 +251,7 @@ export default function UtilitiesScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppHeader 
-        title="Komunal"
+        title={t.utilities.title}
         onSearchPress={() => {}}
         onNotificationPress={() => {}}
         onProfilePress={() => {}}
@@ -259,7 +289,7 @@ export default function UtilitiesScreen() {
                         styles.monthAmount,
                         selectedMonth === monthKey && styles.selectedMonthAmount
                       ]}>
-                        {getTotalForMonth(monthKey).toFixed(0)} ₼
+                        {getTotalForMonth(monthKey).toFixed(0)} {currencySymbol}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -271,7 +301,7 @@ export default function UtilitiesScreen() {
                 {/* Utilities List */}
                 {selectedMonth && monthlyUtilities[selectedMonth] && (
                   <View style={styles.utilitiesList}>
-                    <Text style={styles.sectionTitle}>Xərclər</Text>
+                    <Text style={styles.sectionTitle}>{t.transactions.expenses}</Text>
                     <FlatList
                       data={monthlyUtilities[selectedMonth]}
                       keyExtractor={(item) => item.id}
@@ -292,10 +322,10 @@ export default function UtilitiesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -309,7 +339,7 @@ const styles = StyleSheet.create({
     marginBottom: DesignSystem.spacing.md,
   },
   monthButton: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     paddingHorizontal: DesignSystem.spacing.md,
     paddingVertical: DesignSystem.spacing.sm,
     borderRadius: DesignSystem.borderRadius.medium,
@@ -318,25 +348,25 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
   selectedMonthButton: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
   },
   monthButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: 2,
   },
   selectedMonthButtonText: {
-    color: Colors.light.background,
+    color: '#FFFFFF',
   },
   monthAmount: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   selectedMonthAmount: {
-    color: Colors.light.background,
+    color: '#FFFFFF',
   },
   summaryCard: {
     padding: DesignSystem.spacing.md,
@@ -345,7 +375,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     marginBottom: DesignSystem.spacing.md,
     textAlign: 'center',
@@ -374,13 +404,13 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   categoryAmount: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   utilitiesList: {
@@ -389,7 +419,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     marginBottom: DesignSystem.spacing.md,
   },
@@ -426,28 +456,28 @@ const styles = StyleSheet.create({
   utilityDescription: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: 4,
     lineHeight: 20,
   },
   utilityCategory: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: 4,
     lineHeight: 18,
   },
   utilityDate: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     lineHeight: 16,
   },
   utilityAmount: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.light.error,
+    color: colors.error,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     textAlign: 'right',
   },
@@ -462,13 +492,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     marginBottom: DesignSystem.spacing.sm,
   },
   emptySubtitle: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     textAlign: 'center',
     lineHeight: 24,

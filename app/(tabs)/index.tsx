@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Platform,
@@ -15,7 +15,9 @@ import { AddTransactionModal } from '@/components/ui/add-transaction-modal';
 import { Button } from '@/components/ui/button';
 import { BalanceCard, Card } from '@/components/ui/card';
 import { AppHeader } from '@/components/ui/header';
-import { Colors, DesignSystem, WalletColors } from '@/constants/theme';
+import { DesignSystem, WalletColors } from '@/constants/theme';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 import { StorageService, Transaction } from '@/services/storage';
 
 interface QuickAction {
@@ -30,6 +32,9 @@ interface QuickAction {
 
 
 export default function HomeScreen() {
+  const { t, currencySymbol } = useLanguage();
+  const colors = useThemedColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [totalBalance, setTotalBalance] = useState(0);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
@@ -82,9 +87,9 @@ export default function HomeScreen() {
   const quickActions: QuickAction[] = [
     {
       id: 'add-expense',
-      title: 'Xərc Əlavə',
+      title: t.home.addExpense,
       icon: 'remove-circle',
-      color: Colors.light.error,
+      color: colors.error,
       onPress: () => {
         console.log('Xərc əlavə düyməsinə tıklandı');
         setShowAddExpenseModal(true);
@@ -92,9 +97,9 @@ export default function HomeScreen() {
     },
     {
       id: 'add-income',
-      title: 'Gəlir Əlavə',
+      title: t.home.addIncome,
       icon: 'add-circle',
-      color: Colors.light.success,
+      color: colors.success,
       onPress: () => {
         console.log('Gəlir əlavə düyməsinə tıklandı');
         setShowAddIncomeModal(true);
@@ -102,9 +107,9 @@ export default function HomeScreen() {
     },
     {
       id: 'pay-utility',
-      title: 'Komunal',
+      title: t.home.utilities,
       icon: 'flash',
-      color: Colors.light.accent,
+      color: colors.accent,
       onPress: () => router.push('/utilities'),
     },
   ];
@@ -128,12 +133,12 @@ export default function HomeScreen() {
       <View style={styles.transactionLeft}>
         <View style={[
           styles.transactionIcon,
-          { backgroundColor: transaction.type === 'income' ? Colors.light.success + '20' : Colors.light.error + '20' }
+          { backgroundColor: transaction.type === 'income' ? colors.success + '20' : colors.error + '20' }
         ]}>
           <Ionicons
             name={transaction.type === 'income' ? 'add-circle' : 'remove-circle'}
             size={16}
-            color={transaction.type === 'income' ? Colors.light.success : Colors.light.error}
+            color={transaction.type === 'income' ? colors.success : colors.error}
           />
         </View>
         <View style={styles.transactionInfo}>
@@ -143,9 +148,9 @@ export default function HomeScreen() {
       </View>
       <Text style={[
         styles.transactionAmount,
-        { color: transaction.type === 'income' ? Colors.light.success : Colors.light.error }
+        { color: transaction.type === 'income' ? colors.success : colors.error }
       ]}>
-        {transaction.type === 'income' ? '+' : '-'}{transaction.amount.toFixed(2)} ₼
+        {transaction.type === 'income' ? '+' : '-'}{transaction.amount.toFixed(2)} {currencySymbol}
       </Text>
     </TouchableOpacity>
   );
@@ -165,7 +170,7 @@ export default function HomeScreen() {
           <View>
             {/* Quick Actions */}
             <View style={styles.quickActionsContainer}>
-              <Text style={styles.sectionTitle}>Sürətli Əməliyyatlar</Text>
+              <Text style={styles.sectionTitle}>{t.home.quickActions}</Text>
               <View style={styles.quickActionsGrid}>
                 {quickActions.map(renderQuickAction)}
               </View>
@@ -173,21 +178,21 @@ export default function HomeScreen() {
 
             {/* Financial Summary */}
             <View style={styles.balanceCardsContainer}>
-              <Text style={styles.sectionTitle}>Maliyyə Xülasəsi</Text>
+              <Text style={styles.sectionTitle}>{t.home.financialSummary}</Text>
               <FlatList
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.balanceCardsScroll}
                 data={[
-                  { id: 'total', balance: balanceVisible ? totalBalance.toFixed(2) : "••••••", name: "Ümumi Balans" },
-                  { id: 'income', balance: balanceVisible ? monthlyIncome.toFixed(2) : "••••••", name: "Bu Ay Gəlir" },
-                  { id: 'expense', balance: balanceVisible ? monthlyExpenses.toFixed(2) : "••••••", name: "Bu Ay Xərc" }
+                  { id: 'total', balance: balanceVisible ? totalBalance.toFixed(2) : "••••••", name: t.home.totalBalance },
+                  { id: 'income', balance: balanceVisible ? monthlyIncome.toFixed(2) : "••••••", name: t.home.monthlyIncome },
+                  { id: 'expense', balance: balanceVisible ? monthlyExpenses.toFixed(2) : "••••••", name: t.home.monthlyExpenses }
                 ]}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <BalanceCard
                     balance={item.balance}
-                    currency="₼"
+                    currency={currencySymbol}
                     accountName={item.name}
                   />
                 )}
@@ -197,9 +202,9 @@ export default function HomeScreen() {
             {/* Recent Transactions */}
             <View style={styles.recentTransactionsContainer}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Son Əməliyyatlar</Text>
+                <Text style={styles.sectionTitle}>{t.home.recentTransactions}</Text>
                 <TouchableOpacity onPress={() => router.push('/transactions')}>
-                  <Text style={styles.seeAllText}>Hamısını Gör</Text>
+                  <Text style={styles.seeAllText}>{t.home.seeAll}</Text>
                 </TouchableOpacity>
               </View>
               <Card style={styles.transactionsCard}>
@@ -207,9 +212,9 @@ export default function HomeScreen() {
                   recentTransactions.map(renderRecentTransaction)
                 ) : (
                   <View style={styles.emptyState}>
-                    <Ionicons name="receipt-outline" size={48} color={Colors.light.iconSecondary} />
-                    <Text style={styles.emptyStateText}>Hələ əməliyyat yoxdur</Text>
-                    <Text style={styles.emptyStateSubtext}>İlk əməliyyatınızı əlavə edin</Text>
+                    <Ionicons name="receipt-outline" size={48} color={colors.iconSecondary} />
+                    <Text style={styles.emptyStateText}>{t.home.noTransactions}</Text>
+                    <Text style={styles.emptyStateSubtext}>{t.home.addFirstTransaction}</Text>
                   </View>
                 )}
               </Card>
@@ -217,20 +222,20 @@ export default function HomeScreen() {
 
             {/* Statistics */}
             <View style={styles.statisticsContainer}>
-              <Text style={styles.sectionTitle}>Bu Ay</Text>
+              <Text style={styles.sectionTitle}>{t.home.thisMonth}</Text>
               <View style={styles.statisticsGrid}>
                 <Card style={styles.statisticCard}>
                   <View style={styles.statisticContent}>
-                    <Ionicons name="trending-up" size={24} color={Colors.light.success} />
-                    <Text style={styles.statisticValue}>+{monthlyIncome.toFixed(2)} ₼</Text>
-                    <Text style={styles.statisticLabel}>Gəlir</Text>
+                    <Ionicons name="trending-up" size={24} color={colors.success} />
+                    <Text style={styles.statisticValue}>+{monthlyIncome.toFixed(2)} {currencySymbol}</Text>
+                    <Text style={styles.statisticLabel}>{t.home.income}</Text>
                   </View>
                 </Card>
                 <Card style={styles.statisticCard}>
                   <View style={styles.statisticContent}>
-                    <Ionicons name="trending-down" size={24} color={Colors.light.error} />
-                    <Text style={styles.statisticValue}>-{monthlyExpenses.toFixed(2)} ₼</Text>
-                    <Text style={styles.statisticLabel}>Xərc</Text>
+                    <Ionicons name="trending-down" size={24} color={colors.error} />
+                    <Text style={styles.statisticValue}>-{monthlyExpenses.toFixed(2)} {currencySymbol}</Text>
+                    <Text style={styles.statisticLabel}>{t.home.expense}</Text>
                   </View>
                 </Card>
               </View>
@@ -238,7 +243,7 @@ export default function HomeScreen() {
 
             {/* Financial Tips */}
             <View style={styles.promotionsContainer}>
-              <Text style={styles.sectionTitle}>Maliyyə Məsləhətləri</Text>
+              <Text style={styles.sectionTitle}>{t.home.financialTips}</Text>
               <Card variant="gradient" style={styles.promotionCard}>
                 <LinearGradient
                   colors={WalletColors.skyTrustGradient as [string, string]}
@@ -247,10 +252,10 @@ export default function HomeScreen() {
                   style={styles.promotionGradient}
                 >
                   <View style={styles.promotionContent}>
-                    <Text style={styles.promotionTitle}>Aylıq Büdcə Planlaşdırın</Text>
-                    <Text style={styles.promotionSubtitle}>Gəlir və xərclərinizi balanslaşdırın</Text>
+                    <Text style={styles.promotionTitle}>{t.home.budgetPlanning}</Text>
+                    <Text style={styles.promotionSubtitle}>{t.home.budgetDescription}</Text>
                     <Button
-                      title="Planlaşdır"
+                      title={t.home.plan}
                       variant="accent"
                       size="small"
                       onPress={() => {}}
@@ -283,10 +288,10 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -296,7 +301,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginBottom: DesignSystem.spacing.md,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
@@ -323,7 +328,7 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
@@ -345,7 +350,7 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.primary,
+    color: colors.primary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   transactionsCard: {
@@ -357,7 +362,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: DesignSystem.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
+    borderBottomColor: colors.border,
   },
   transactionLeft: {
     flexDirection: 'row',
@@ -378,12 +383,12 @@ const styles = StyleSheet.create({
   transactionDescription: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   transactionTime: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     marginTop: DesignSystem.spacing.xs,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
@@ -409,13 +414,13 @@ const styles = StyleSheet.create({
   statisticValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
+    color: colors.text,
     marginTop: DesignSystem.spacing.sm,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
   statisticLabel: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     marginTop: DesignSystem.spacing.xs,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
@@ -456,13 +461,13 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginTop: DesignSystem.spacing.md,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     marginTop: DesignSystem.spacing.xs,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },

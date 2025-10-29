@@ -1,4 +1,5 @@
-import { Colors, DesignSystem, WalletColors } from '@/constants/theme';
+import { DesignSystem, WalletColors } from '@/constants/theme';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
@@ -39,6 +40,8 @@ export function Button({
   fullWidth = false,
   icon,
 }: ButtonProps) {
+  const colors = useThemedColors();
+  
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       borderRadius: DesignSystem.borderRadius.medium,
@@ -70,18 +73,18 @@ export function Button({
     // Variant styles
     const variantStyles = {
       primary: {
-        backgroundColor: Colors.light.primary,
+        backgroundColor: colors.primary,
       },
       secondary: {
-        backgroundColor: Colors.light.secondary,
+        backgroundColor: colors.secondary,
       },
       accent: {
-        backgroundColor: Colors.light.accent,
+        backgroundColor: colors.accent,
       },
       outline: {
         backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: Colors.light.primary,
+        borderColor: colors.primary,
       },
       ghost: {
         backgroundColor: 'transparent',
@@ -126,13 +129,13 @@ export function Button({
         color: '#FFFFFF',
       },
       accent: {
-        color: '#FFFFFF',
+        color: colors.text,
       },
       outline: {
-        color: Colors.light.primary,
+        color: colors.primary,
       },
       ghost: {
-        color: Colors.light.primary,
+        color: colors.primary,
       },
     };
 
@@ -148,7 +151,7 @@ export function Button({
       return (
         <ActivityIndicator
           size="small"
-          color={variant === 'outline' || variant === 'ghost' ? Colors.light.primary : '#FFFFFF'}
+          color={variant === 'outline' || variant === 'ghost' ? colors.primary : '#FFFFFF'}
         />
       );
     }

@@ -1,6 +1,8 @@
-import { Colors, DesignSystem } from '@/constants/theme';
+import { DesignSystem } from '@/constants/theme';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   Platform,
   StatusBar,
@@ -37,6 +39,8 @@ export function Header({
   style,
   variant = 'default',
 }: HeaderProps) {
+  const colors = useThemedColors();
+  
   const getHeaderStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       paddingHorizontal: DesignSystem.spacing.md,
@@ -45,15 +49,15 @@ export function Header({
 
     const variantStyles = {
       default: {
-        backgroundColor: Colors.light.background,
+        backgroundColor: colors.background,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.light.border,
+        borderBottomColor: colors.border,
       },
       transparent: {
         backgroundColor: 'transparent',
       },
       gradient: {
-        backgroundColor: Colors.light.primary,
+        backgroundColor: colors.primary,
       },
     };
 
@@ -64,25 +68,25 @@ export function Header({
   };
 
   const getTitleStyle = () => {
-    const baseStyle = {
+    return {
       fontSize: 24,
       fontWeight: '700' as const,
-      color: variant === 'gradient' ? '#FFFFFF' : Colors.light.text,
+      color: variant === 'gradient' ? '#FFFFFF' : colors.text,
       fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     };
-
-    return baseStyle;
   };
 
   const getSubtitleStyle = () => {
     return {
       fontSize: 14,
       fontWeight: '500' as const,
-      color: variant === 'gradient' ? 'rgba(255, 255, 255, 0.8)' : Colors.light.textSecondary,
+      color: variant === 'gradient' ? 'rgba(255, 255, 255, 0.8)' : colors.textSecondary,
       fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
       marginTop: DesignSystem.spacing.xs,
     };
   };
+
+  const iconColor = variant === 'gradient' ? '#FFFFFF' : colors.icon;
 
   const renderLeftButton = () => {
     if (showBackButton) {
@@ -92,11 +96,7 @@ export function Header({
           onPress={onBackPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={variant === 'gradient' ? '#FFFFFF' : Colors.light.icon}
-          />
+          <Ionicons name="arrow-back" size={24} color={iconColor} />
         </TouchableOpacity>
       );
     }
@@ -108,11 +108,7 @@ export function Header({
           onPress={onLeftPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons
-            name={leftIcon}
-            size={24}
-            color={variant === 'gradient' ? '#FFFFFF' : Colors.light.icon}
-          />
+          <Ionicons name={leftIcon} size={24} color={iconColor} />
         </TouchableOpacity>
       );
     }
@@ -128,11 +124,7 @@ export function Header({
           onPress={onRightPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons
-            name={rightIcon}
-            size={24}
-            color={variant === 'gradient' ? '#FFFFFF' : Colors.light.icon}
-          />
+          <Ionicons name={rightIcon} size={24} color={iconColor} />
         </TouchableOpacity>
       );
     }
@@ -141,11 +133,7 @@ export function Header({
   };
 
   return (
-    <SafeAreaView style={[styles.container, style]}>
-      <StatusBar
-        barStyle={variant === 'gradient' ? 'light-content' : 'dark-content'}
-        backgroundColor={variant === 'gradient' ? Colors.light.primary : Colors.light.background}
-      />
+    <SafeAreaView style={[{ backgroundColor: colors.background }, style]}>
       <View style={getHeaderStyle()}>
         <View style={styles.headerContent}>
           {renderLeftButton()}
@@ -177,39 +165,46 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ 
-  title = 'Cibim',
+  title,
   onNotificationPress, 
   onProfilePress, 
   onSearchPress,
   notificationCount = 0 
 }: AppHeaderProps) {
+  const { t } = useLanguage();
+  const colors = useThemedColors();
+  const displayTitle = title || t.app.name;
+  
   return (
-    <View style={styles.appHeaderContainer}>
+    <View style={[styles.appHeaderContainer, { 
+      backgroundColor: colors.background,
+      borderBottomColor: colors.border 
+    }]}>
       <View style={styles.appHeaderContent}>
         {/* Left Side - App Name */}
         <View style={styles.appHeaderLeft}>
-          <Text style={styles.appTitle}>{title}</Text>
-          <Text style={styles.appSubtitle}>Pul İdarəetməsi</Text>
+          <Text style={[styles.appTitle, { color: colors.text }]}>{displayTitle}</Text>
+          <Text style={[styles.appSubtitle, { color: colors.textSecondary }]}>{t.app.subtitle}</Text>
         </View>
 
         {/* Right Side - Actions */}
         <View style={styles.appHeaderRight}>
           {/* Search Button */}
           <TouchableOpacity 
-            style={styles.headerActionButton}
+            style={[styles.headerActionButton, { backgroundColor: colors.surface }]}
             onPress={onSearchPress}
           >
-            <Ionicons name="search" size={20} color={Colors.light.text} />
+            <Ionicons name="search" size={20} color={colors.text} />
           </TouchableOpacity>
 
           {/* Notifications Button */}
           <TouchableOpacity 
-            style={styles.headerActionButton}
+            style={[styles.headerActionButton, { backgroundColor: colors.surface }]}
             onPress={onNotificationPress}
           >
-            <Ionicons name="notifications-outline" size={20} color={Colors.light.text} />
+            <Ionicons name="notifications-outline" size={20} color={colors.text} />
             {notificationCount > 0 && (
-              <View style={styles.notificationBadge}>
+              <View style={[styles.notificationBadge, { backgroundColor: colors.error }]}>
                 <Text style={styles.notificationBadgeText}>
                   {notificationCount > 9 ? '9+' : notificationCount}
                 </Text>
@@ -219,10 +214,10 @@ export function AppHeader({
 
           {/* Profile Button */}
           <TouchableOpacity 
-            style={styles.headerActionButton}
+            style={[styles.headerActionButton, { backgroundColor: colors.surface }]}
             onPress={onProfilePress}
           >
-            <Ionicons name="person-circle-outline" size={20} color={Colors.light.text} />
+            <Ionicons name="person-circle-outline" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -231,9 +226,10 @@ export function AppHeader({
 }
 
 export function BalanceHeader({ balance, currency, onPress }: BalanceHeaderProps) {
+  const { t } = useLanguage();
   return (
     <Header
-      title="Cibim"
+      title={t.app.name}
       subtitle={`${balance} ${currency}`}
       variant="gradient"
       rightIcon="eye"
@@ -244,10 +240,6 @@ export function BalanceHeader({ balance, currency, onPress }: BalanceHeaderProps
 }
 
 const styles = StyleSheet.create({
-  container: {
-    zIndex: 1000,
-    backgroundColor: 'red',
-  },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -268,12 +260,10 @@ const styles = StyleSheet.create({
   },
   // App Header Styles
   appHeaderContainer: {
-    backgroundColor: Colors.light.background,
     paddingTop: Platform.OS === 'ios' ? 80 : 20,
     paddingBottom: DesignSystem.spacing.md,
     paddingHorizontal: DesignSystem.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
     ...DesignSystem.shadows.small,
     marginBottom: DesignSystem.spacing.md,
   },
@@ -288,13 +278,11 @@ const styles = StyleSheet.create({
   appTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.light.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     marginBottom: 2,
   },
   appSubtitle: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     fontWeight: '500',
   },
@@ -307,7 +295,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: DesignSystem.borderRadius.round,
-    backgroundColor: Colors.light.surface,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -317,7 +304,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: Colors.light.error,
     borderRadius: DesignSystem.borderRadius.round,
     minWidth: 18,
     height: 18,
@@ -328,7 +314,7 @@ const styles = StyleSheet.create({
   notificationBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: Colors.light.background,
+    color: '#FFFFFF',
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
 });

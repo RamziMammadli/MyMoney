@@ -1,4 +1,5 @@
-import { Colors, DesignSystem, WalletColors } from '@/constants/theme';
+import { DesignSystem, WalletColors } from '@/constants/theme';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import {
@@ -32,6 +33,8 @@ export function Card({
   disabled = false,
   padding = 'md',
 }: CardProps) {
+  const colors = useThemedColors();
+  
   const getCardStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       borderRadius: DesignSystem.borderRadius.large,
@@ -54,13 +57,13 @@ export function Card({
     // Variant styles
     const variantStyles = {
       default: {
-        backgroundColor: Colors.light.card,
+        backgroundColor: colors.card,
         ...DesignSystem.shadows.small,
       },
       glass: {
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: colors.card + 'CC',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderColor: colors.border,
         ...DesignSystem.shadows.medium,
       },
       gradient: {
@@ -68,7 +71,7 @@ export function Card({
         ...DesignSystem.shadows.medium,
       },
       elevated: {
-        backgroundColor: Colors.light.card,
+        backgroundColor: colors.card,
         ...DesignSystem.shadows.large,
       },
     };
@@ -122,14 +125,16 @@ export interface BalanceCardProps {
 }
 
 export function BalanceCard({ balance, currency, accountName, onPress }: BalanceCardProps) {
+  const colors = useThemedColors();
+  
   return (
     <Card variant="gradient" size="large" onPress={onPress} style={styles.balanceCard}>
       <View style={styles.balanceHeader}>
-        <Text style={styles.accountName}>{accountName}</Text>
-        <Text style={styles.currency}>{currency}</Text>
+        <Text style={[styles.accountName, { color: colors.text }]}>{accountName}</Text>
+        <Text style={[styles.currency, { color: colors.textSecondary }]}>{currency}</Text>
       </View>
       <View style={styles.balanceAmount}>
-        <Text style={styles.balanceText}>{balance}</Text>
+        <Text style={[styles.balanceText, { color: colors.text }]}>{balance}</Text>
       </View>
     </Card>
   );
@@ -149,13 +154,11 @@ const styles = StyleSheet.create({
   accountName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   currency: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.light.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   balanceAmount: {
@@ -164,7 +167,6 @@ const styles = StyleSheet.create({
   balanceText: {
     fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
-    fontFamily: Platform.OS === 'ios' ? 'SF Pro Displ' : 'Inter',
+    fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
 });

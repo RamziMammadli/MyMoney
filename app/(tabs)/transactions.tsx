@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     FlatList,
     Platform,
@@ -13,10 +13,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/ui/card';
 import { AppHeader } from '@/components/ui/header';
 import { SearchInput } from '@/components/ui/input';
-import { Colors, DesignSystem } from '@/constants/theme';
+import { DesignSystem } from '@/constants/theme';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 import { StorageService, Transaction } from '@/services/storage';
 
 export default function TransactionsScreen() {
+  const { t, language, currencySymbol } = useLanguage();
+  const colors = useThemedColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,27 +96,27 @@ export default function TransactionsScreen() {
 
   const getTransactionIconColor = (transaction: Transaction) => {
     if (transaction.type === 'income') {
-      return Colors.light.success;
+      return colors.success;
     }
     
     const categoryColors: { [key: string]: string } = {
-      'yemək': Colors.light.error,
-      'nəqliyyat': Colors.light.warning,
-      'alış-veriş': Colors.light.accent,
-      'əyləncə': Colors.light.info,
-      'komunal': Colors.light.primary,
-      'sağlamlıq': Colors.light.error,
-      'təhsil': Colors.light.success,
-      'geyim': Colors.light.accent,
-      'digər': Colors.light.textSecondary,
-      'maaş': Colors.light.success,
-      'freelance': Colors.light.success,
-      'investisiya': Colors.light.success,
-      'hədiyyə': Colors.light.success,
-      'satış': Colors.light.success,
+      'yemək': colors.error,
+      'nəqliyyat': colors.warning,
+      'alış-veriş': colors.accent,
+      'əyləncə': colors.info,
+      'komunal': colors.primary,
+      'sağlamlıq': colors.error,
+      'təhsil': colors.success,
+      'geyim': colors.accent,
+      'digər': colors.textSecondary,
+      'maaş': colors.success,
+      'freelance': colors.success,
+      'investisiya': colors.success,
+      'hədiyyə': colors.success,
+      'satış': colors.success,
     };
     
-    return categoryColors[transaction.category] || Colors.light.error;
+    return categoryColors[transaction.category] || colors.error;
   };
 
   const renderTransaction = (transaction: Transaction) => {
@@ -132,16 +137,16 @@ export default function TransactionsScreen() {
             <Text style={styles.transactionDescription}>{transaction.description}</Text>
             <Text style={styles.transactionCategory}>{transaction.category}</Text>
             <Text style={styles.transactionDate}>
-              {transactionDate.toLocaleDateString('az-AZ')} • {transactionDate.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
+              {transactionDate.toLocaleDateString(language === 'az' ? 'az-AZ' : language === 'ru' ? 'ru-RU' : 'en-US')} • {transactionDate.toLocaleTimeString(language === 'az' ? 'az-AZ' : language === 'ru' ? 'ru-RU' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </View>
         </View>
         <View style={styles.transactionRight}>
           <Text style={[
             styles.transactionAmount,
-            { color: transaction.type === 'income' ? Colors.light.success : Colors.light.error }
+            { color: transaction.type === 'income' ? colors.success : colors.error }
           ]}>
-            {transaction.type === 'income' ? '+' : '-'}{transaction.amount.toFixed(2)} ₼
+            {transaction.type === 'income' ? '+' : '-'}{transaction.amount.toFixed(2)} {currencySymbol}
           </Text>
         </View>
       </TouchableOpacity>
@@ -155,7 +160,7 @@ export default function TransactionsScreen() {
         onPress={() => setSelectedType('all')}
       >
         <Text style={[styles.filterTabText, selectedType === 'all' && styles.activeFilterTabText]}>
-          Hamısı
+{t.transactions.all}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -163,7 +168,7 @@ export default function TransactionsScreen() {
         onPress={() => setSelectedType('income')}
       >
         <Text style={[styles.filterTabText, selectedType === 'income' && styles.activeFilterTabText]}>
-          Gəlir
+{t.transactions.income}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -171,7 +176,7 @@ export default function TransactionsScreen() {
         onPress={() => setSelectedType('expense')}
       >
         <Text style={[styles.filterTabText, selectedType === 'expense' && styles.activeFilterTabText]}>
-          Xərc
+{t.transactions.expenses}
         </Text>
       </TouchableOpacity>
     </View>
@@ -209,10 +214,10 @@ export default function TransactionsScreen() {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="receipt-outline" size={64} color={Colors.light.iconSecondary} />
-      <Text style={styles.emptyStateTitle}>Əməliyyat tapılmadı</Text>
+      <Ionicons name="receipt-outline" size={64} color={colors.iconSecondary} />
+      <Text style={styles.emptyStateTitle}>{t.transactions.noTransactions}</Text>
       <Text style={styles.emptyStateSubtitle}>
-        {searchQuery ? 'Axtarış sorğunuza uyğun əməliyyat yoxdur' : 'Hələ əməliyyat əlavə edilməyib'}
+        {searchQuery ? t.transactions.noTransactions : t.home.noTransactions}
       </Text>
     </View>
   );
@@ -227,7 +232,7 @@ export default function TransactionsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppHeader 
-        title="Əməliyyatlar"
+        title={t.transactions.title}
         onSearchPress={() => {}}
         onNotificationPress={() => {}}
         onProfilePress={() => {}}
@@ -244,7 +249,7 @@ export default function TransactionsScreen() {
             {/* Search */}
             <View style={styles.searchContainer}>
               <SearchInput
-                placeholder="Əməliyyat axtar..."
+                placeholder={t.transactions.title + '...'}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -260,15 +265,15 @@ export default function TransactionsScreen() {
             <View style={styles.summaryContainer}>
               <Card style={styles.summaryCard}>
                 <View style={styles.summaryContent}>
-                  <Text style={styles.summaryTitle}>Ümumi Balans</Text>
+                  <Text style={styles.summaryTitle}>{t.home.totalBalance}</Text>
                   <Text style={[
                     styles.summaryAmount,
-                    { color: getTotalAmount() >= 0 ? Colors.light.success : Colors.light.error }
+                    { color: getTotalAmount() >= 0 ? colors.success : colors.error }
                   ]}>
-                    {getTotalAmount() >= 0 ? '+' : ''}{getTotalAmount().toFixed(2)} ₼
+                    {getTotalAmount() >= 0 ? '+' : ''}{getTotalAmount().toFixed(2)} {currencySymbol}
                   </Text>
                   <Text style={styles.summarySubtitle}>
-                    {filteredTransactions.length} əməliyyat
+                    {filteredTransactions.length} {t.transactions.title.toLowerCase()}
                   </Text>
                 </View>
               </Card>
@@ -277,7 +282,7 @@ export default function TransactionsScreen() {
             {/* Section Title */}
             <View style={styles.transactionsContainer}>
               <Text style={styles.sectionTitle}>
-                Əməliyyatlar ({filteredTransactions.length})
+                {t.transactions.title} ({filteredTransactions.length})
               </Text>
             </View>
           </View>
@@ -288,10 +293,10 @@ export default function TransactionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -303,7 +308,7 @@ const styles = StyleSheet.create({
   },
   filterTabs: {
     flexDirection: 'row',
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: DesignSystem.borderRadius.medium,
     padding: 4,
     marginBottom: DesignSystem.spacing.md,
@@ -315,16 +320,16 @@ const styles = StyleSheet.create({
     borderRadius: DesignSystem.borderRadius.small,
   },
   activeFilterTab: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
   },
   filterTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   activeFilterTabText: {
-    color: Colors.light.background,
+    color: colors.text,
   },
   categoryFilter: {
     marginBottom: DesignSystem.spacing.md,
@@ -332,24 +337,24 @@ const styles = StyleSheet.create({
   categoryChip: {
     paddingHorizontal: DesignSystem.spacing.md,
     paddingVertical: DesignSystem.spacing.sm,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: DesignSystem.borderRadius.round,
     marginRight: DesignSystem.spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: colors.border,
   },
   activeCategoryChip: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   categoryChipText: {
     fontSize: 12,
     fontWeight: '500',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   activeCategoryChipText: {
-    color: Colors.light.background,
+    color: colors.text,
   },
   summaryContainer: {
     marginBottom: DesignSystem.spacing.lg,
@@ -363,7 +368,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: DesignSystem.spacing.sm,
   },
@@ -375,7 +380,7 @@ const styles = StyleSheet.create({
   },
   summarySubtitle: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   transactionsContainer: {
@@ -384,7 +389,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginBottom: DesignSystem.spacing.md,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
@@ -394,7 +399,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: DesignSystem.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
+    borderBottomColor: colors.border,
   },
   transactionLeft: {
     flexDirection: 'row',
@@ -415,19 +420,19 @@ const styles = StyleSheet.create({
   transactionDescription: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: 2,
   },
   transactionCategory: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: 2,
   },
   transactionDate: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   transactionRight: {
@@ -445,13 +450,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginTop: DesignSystem.spacing.md,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
   emptyStateSubtitle: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     marginTop: DesignSystem.spacing.sm,
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',

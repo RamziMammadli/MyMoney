@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -13,10 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { AppHeader } from '@/components/ui/header';
 import { Input } from '@/components/ui/input';
 import { Colors, DesignSystem } from '@/constants/theme';
 import { StorageService } from '@/services/storage';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 
 interface Goal {
   id: string;
@@ -31,6 +33,9 @@ interface Goal {
 }
 
 export default function GoalsScreen() {
+  const { t, language, currencySymbol } = useLanguage();
+  const colors = useThemedColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const [newGoal, setNewGoal] = useState({
@@ -56,7 +61,7 @@ export default function GoalsScreen() {
 
   const handleAddGoal = async () => {
     if (!newGoal.title || !newGoal.targetAmount || !newGoal.deadline) {
-      Alert.alert('Xəta', 'Zəhmət olmasa bütün məlumatları doldurun');
+      Alert.alert(t.common.error || t.goals.fillAllFields, t.goals.fillAllFields);
       return;
     }
 
@@ -67,7 +72,7 @@ export default function GoalsScreen() {
         targetAmount: parseFloat(newGoal.targetAmount),
         currentAmount: 0,
         deadline: newGoal.deadline,
-        category: newGoal.category || 'Digər',
+        category: newGoal.category || t.goals.other,
         isCompleted: false,
       });
 
@@ -82,7 +87,7 @@ export default function GoalsScreen() {
       await loadGoals();
     } catch (error) {
       console.error('Error saving goal:', error);
-      Alert.alert('Xəta', 'Hədəf əlavə edilərkən xəta baş verdi');
+      Alert.alert(t.common.error || t.goals.addError, t.goals.addError);
     }
   };
 
@@ -123,8 +128,8 @@ export default function GoalsScreen() {
             </Text>
             {goal.isCompleted && (
               <View style={styles.completedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={Colors.light.success} />
-                <Text style={styles.completedBadgeText}>Tamamlandı</Text>
+                <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                <Text style={styles.completedBadgeText}>{t.goals.completed}</Text>
               </View>
             )}
           </View>
@@ -142,7 +147,7 @@ export default function GoalsScreen() {
         <View style={styles.goalProgress}>
           <View style={styles.progressHeader}>
             <Text style={[styles.progressText, goal.isCompleted && styles.completedText]}>
-              {goal.currentAmount.toFixed(2)} ₼ / {goal.targetAmount.toFixed(2)} ₼
+              {goal.currentAmount.toFixed(2)} {currencySymbol} / {goal.targetAmount.toFixed(2)} {currencySymbol}
             </Text>
             <Text style={[styles.progressPercentage, goal.isCompleted && styles.completedText]}>
               {progress.toFixed(1)}%
@@ -160,8 +165,8 @@ export default function GoalsScreen() {
         </View>
         <View style={styles.goalFooter}>
           <Text style={[styles.goalDeadline, isOverdue && styles.overdueText]}>
-            <Ionicons name="calendar" size={14} color={isOverdue ? Colors.light.error : Colors.light.textSecondary} />
-            {' '}Son tarix: {deadline.toLocaleDateString('az-AZ')}
+            <Ionicons name="calendar" size={14} color={isOverdue ? colors.error : colors.textSecondary} />
+            {' '}{t.goals.deadlineLabel} {deadline.toLocaleDateString(language === 'az' ? 'az-AZ' : language === 'ru' ? 'ru-RU' : 'en-US')}
           </Text>
           
           {!goal.isCompleted && (
@@ -170,13 +175,13 @@ export default function GoalsScreen() {
                 style={styles.addAmountButton}
                 onPress={() => handleUpdateGoal(goal.id, 50)}
               >
-                <Text style={styles.addAmountText}>+50 ₼</Text>
+                <Text style={styles.addAmountText}>+50 {currencySymbol}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.addAmountButton}
                 onPress={() => handleUpdateGoal(goal.id, 100)}
               >
-                <Text style={styles.addAmountText}>+100 ₼</Text>
+                <Text style={styles.addAmountText}>+100 {currencySymbol}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -189,9 +194,9 @@ export default function GoalsScreen() {
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Yeni Hədəf</Text>
+          <Text style={styles.modalTitle}>{t.goals.newGoal}</Text>
           <TouchableOpacity onPress={() => setShowAddGoalModal(false)}>
-            <Ionicons name="close" size={24} color={Colors.light.textSecondary} />
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -201,14 +206,14 @@ export default function GoalsScreen() {
           renderItem={() => (
             <View>
               <Input
-                placeholder="Hədəf adı"
+                placeholder={t.goals.goalTitle}
                 value={newGoal.title}
                 onChangeText={(text) => setNewGoal(prev => ({ ...prev, title: text }))}
                 style={styles.modalInput}
               />
               
               <Input
-                placeholder="Təsvir (istəyə bağlı)"
+                placeholder={t.goals.goalDescription}
                 value={newGoal.description}
                 onChangeText={(text) => setNewGoal(prev => ({ ...prev, description: text }))}
                 style={styles.modalInput}
@@ -216,7 +221,7 @@ export default function GoalsScreen() {
               />
               
               <Input
-                placeholder="Hədəf məbləği (₼)"
+                placeholder={t.goals.targetAmountPlaceholder}
                 value={newGoal.targetAmount}
                 onChangeText={(text) => setNewGoal(prev => ({ ...prev, targetAmount: text }))}
                 keyboardType="numeric"
@@ -224,14 +229,14 @@ export default function GoalsScreen() {
               />
               
               <Input
-                placeholder="Son tarix (YYYY-MM-DD)"
+                placeholder={t.goals.deadlinePlaceholder}
                 value={newGoal.deadline}
                 onChangeText={(text) => setNewGoal(prev => ({ ...prev, deadline: text }))}
                 style={styles.modalInput}
               />
               
               <Input
-                placeholder="Kateqoriya"
+                placeholder={t.goals.categoryPlaceholder}
                 value={newGoal.category}
                 onChangeText={(text) => setNewGoal(prev => ({ ...prev, category: text }))}
                 style={styles.modalInput}
@@ -243,7 +248,7 @@ export default function GoalsScreen() {
 
         <View style={styles.modalFooter}>
           <Button
-            title="Hədəf Əlavə Et"
+            title={t.goals.addGoal}
             onPress={handleAddGoal}
             style={styles.addButton}
           />
@@ -255,14 +260,14 @@ export default function GoalsScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIcon}>
-        <Ionicons name="flag" size={64} color={Colors.light.textSecondary} />
+        <Ionicons name="flag" size={64} color={colors.textSecondary} />
       </View>
-      <Text style={styles.emptyTitle}>Hələ hədəf yoxdur</Text>
+      <Text style={styles.emptyTitle}>{t.goals.noGoals}</Text>
       <Text style={styles.emptySubtitle}>
-        İlk hədəfinizi əlavə etmək üçün aşağıdakı düyməyə basın
+        {t.goals.addFirstGoal}
       </Text>
       <Button
-        title="Hədəf Əlavə Et"
+        title={t.goals.addGoal}
         onPress={() => setShowAddGoalModal(true)}
         style={styles.emptyButton}
       />
@@ -272,7 +277,7 @@ export default function GoalsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppHeader 
-        title="Hədəflər"
+        title={t.goals.title}
         onSearchPress={() => {}}
         onNotificationPress={() => {}}
         onProfilePress={() => {}}
@@ -293,7 +298,7 @@ export default function GoalsScreen() {
             style={styles.fab}
             onPress={() => setShowAddGoalModal(true)}
           >
-            <Ionicons name="add" size={24} color={Colors.light.background} />
+            <Ionicons name="add" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
       )}
@@ -303,10 +308,10 @@ export default function GoalsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -317,8 +322,8 @@ const styles = StyleSheet.create({
     padding: DesignSystem.spacing.md,
   },
   completedGoal: {
-    backgroundColor: Colors.light.success + '10',
-    borderColor: Colors.light.success + '30',
+    backgroundColor: colors.success + '10',
+    borderColor: colors.success + '30',
   },
   goalHeader: {
     flexDirection: 'row',
@@ -335,17 +340,17 @@ const styles = StyleSheet.create({
   goalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     flex: 1,
   },
   completedText: {
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
   },
   completedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.success + '20',
+    backgroundColor: colors.success + '20',
     paddingHorizontal: DesignSystem.spacing.sm,
     paddingVertical: DesignSystem.spacing.xs,
     borderRadius: DesignSystem.borderRadius.small,
@@ -354,17 +359,17 @@ const styles = StyleSheet.create({
   completedBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.success,
+    color: colors.success,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   goalCategory: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   goalDescription: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: DesignSystem.spacing.md,
     lineHeight: 20,
@@ -381,28 +386,28 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   progressPercentage: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.primary,
+    color: colors.primary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   progressBar: {
     height: 8,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: DesignSystem.borderRadius.small,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
     borderRadius: DesignSystem.borderRadius.small,
   },
   completedProgress: {
-    backgroundColor: Colors.light.success,
+    backgroundColor: colors.success,
   },
   goalFooter: {
     flexDirection: 'row',
@@ -411,20 +416,20 @@ const styles = StyleSheet.create({
   },
   goalDeadline: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     flexDirection: 'row',
     alignItems: 'center',
   },
   overdueText: {
-    color: Colors.light.error,
+    color: colors.error,
   },
   goalActions: {
     flexDirection: 'row',
     gap: DesignSystem.spacing.sm,
   },
   addAmountButton: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: DesignSystem.spacing.sm,
     paddingVertical: DesignSystem.spacing.xs,
     borderRadius: DesignSystem.borderRadius.small,
@@ -432,7 +437,7 @@ const styles = StyleSheet.create({
   addAmountText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.background,
+    color: '#FFFFFF',
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   fabContainer: {
@@ -444,7 +449,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...DesignSystem.shadows.medium,
@@ -460,13 +465,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     marginBottom: DesignSystem.spacing.sm,
   },
   emptySubtitle: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     textAlign: 'center',
     lineHeight: 24,
@@ -487,7 +492,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   modalContent: {
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
     borderRadius: DesignSystem.borderRadius.large,
     width: '90%',
     maxHeight: '80%',
@@ -499,12 +504,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: DesignSystem.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
   modalBody: {
@@ -516,7 +521,7 @@ const styles = StyleSheet.create({
   modalFooter: {
     padding: DesignSystem.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
+    borderTopColor: colors.border,
   },
   addButton: {
     width: '100%',

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -15,11 +15,16 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { AppHeader } from '@/components/ui/header';
 import { Input } from '@/components/ui/input';
-import { Colors, DesignSystem } from '@/constants/theme';
+import { DesignSystem } from '@/constants/theme';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 import { Debt, StorageService } from '@/services/storage';
 
 
 export default function DebtsScreen() {
+  const { t, currencySymbol } = useLanguage();
+  const colors = useThemedColors();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -81,24 +86,24 @@ export default function DebtsScreen() {
 
   const getMonthOptions = () => {
     return [
-      { value: 1, label: 'Yanvar' },
-      { value: 2, label: 'Fevral' },
-      { value: 3, label: 'Mart' },
-      { value: 4, label: 'Aprel' },
-      { value: 5, label: 'May' },
-      { value: 6, label: 'İyun' },
-      { value: 7, label: 'İyul' },
-      { value: 8, label: 'Avqust' },
-      { value: 9, label: 'Sentyabr' },
-      { value: 10, label: 'Oktyabr' },
-      { value: 11, label: 'Noyabr' },
-      { value: 12, label: 'Dekabr' },
+      { value: 1, label: t.debts.january },
+      { value: 2, label: t.debts.february },
+      { value: 3, label: t.debts.march },
+      { value: 4, label: t.debts.april },
+      { value: 5, label: t.debts.may },
+      { value: 6, label: t.debts.june },
+      { value: 7, label: t.debts.july },
+      { value: 8, label: t.debts.august },
+      { value: 9, label: t.debts.september },
+      { value: 10, label: t.debts.october },
+      { value: 11, label: t.debts.november },
+      { value: 12, label: t.debts.december },
     ];
   };
 
   const handleAddDebt = async () => {
     if (!newDebt.title || !newDebt.amount || !newDebt.creditor) {
-      Alert.alert('Xəta', 'Zəhmət olmasa bütün məlumatları doldurun');
+      Alert.alert(t.common.error || t.debts.fillAllFields, t.debts.fillAllFields);
       return;
     }
 
@@ -124,7 +129,7 @@ export default function DebtsScreen() {
       await loadDebts(); // Reload debts from storage
     } catch (error) {
       console.error('Error saving debt:', error);
-      Alert.alert('Xəta', 'Borç əlavə edilərkən xəta baş verdi');
+      Alert.alert(t.common.error || t.debts.addError, t.debts.addError);
     }
   };
 
@@ -149,12 +154,12 @@ export default function DebtsScreen() {
 
   const handleDeleteDebt = async (debtId: string) => {
     Alert.alert(
-      'Borcu Sil',
-      'Bu borcu silmək istədiyinizə əminsiniz?',
+      t.debts.delete,
+      t.debts.deleteConfirm,
       [
-        { text: 'Ləğv Et', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Sil',
+          text: t.common.delete,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -162,7 +167,7 @@ export default function DebtsScreen() {
               await loadDebts(); // Reload debts from storage
             } catch (error) {
               console.error('Error deleting debt:', error);
-              Alert.alert('Xəta', 'Borcu silərkən xəta baş verdi');
+              Alert.alert(t.common.error || t.debts.deleteError, t.debts.deleteError);
             }
           },
         },
@@ -194,18 +199,18 @@ export default function DebtsScreen() {
             </Text>
             {debt.isPaid && (
               <View style={styles.paidBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={Colors.light.success} />
-                <Text style={styles.paidBadgeText}>Ödənildi</Text>
+                <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                <Text style={styles.paidBadgeText}>{t.debts.paid}</Text>
               </View>
             )}
           </View>
           <TouchableOpacity onPress={() => handleDeleteDebt(debt.id)}>
-            <Ionicons name="trash-outline" size={20} color={Colors.light.error} />
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
 
         <Text style={[styles.debtCreditor, debt.isPaid && styles.paidText]}>
-          <Ionicons name="person" size={14} color={Colors.light.textSecondary} />
+          <Ionicons name="person" size={14} color={colors.textSecondary} />
           {' '}{debt.creditor}
         </Text>
 
@@ -219,19 +224,19 @@ export default function DebtsScreen() {
           <View style={styles.amountRow}>
             <Text style={[styles.amountLabel, debt.isPaid && styles.paidText]}>Ümumi məbləğ:</Text>
             <Text style={[styles.amountValue, debt.isPaid && styles.paidText]}>
-              {debt.amount.toFixed(2)} ₼
+              {debt.amount.toFixed(2)} {currencySymbol}
             </Text>
           </View>
           <View style={styles.amountRow}>
-            <Text style={[styles.amountLabel, debt.isPaid && styles.paidText]}>Ödənilən:</Text>
+            <Text style={[styles.amountLabel, debt.isPaid && styles.paidText]}>{t.debts.paid}:</Text>
             <Text style={[styles.amountValue, debt.isPaid && styles.paidText]}>
-              {debt.paidAmount.toFixed(2)} ₼
+              {debt.paidAmount.toFixed(2)} {currencySymbol}
             </Text>
           </View>
           <View style={styles.amountRow}>
-            <Text style={[styles.amountLabel, debt.isPaid && styles.paidText]}>Qalan:</Text>
+            <Text style={[styles.amountLabel, debt.isPaid && styles.paidText]}>{t.debts.remaining}:</Text>
             <Text style={[styles.amountValue, debt.isPaid && styles.paidText]}>
-              {remainingAmount.toFixed(2)} ₼
+              {remainingAmount.toFixed(2)} {currencySymbol}
             </Text>
           </View>
         </View>
@@ -255,7 +260,7 @@ export default function DebtsScreen() {
 
         <View style={styles.debtFooter}>
           <Text style={[styles.debtDueDate, isOverdue && styles.overdueText]}>
-            <Ionicons name="calendar" size={14} color={isOverdue ? Colors.light.error : Colors.light.textSecondary} />
+            <Ionicons name="calendar" size={14} color={isOverdue ? colors.error : colors.textSecondary} />
             {' '}Son tarix: {dueDate.toLocaleDateString('az-AZ')}
           </Text>
           
@@ -265,19 +270,19 @@ export default function DebtsScreen() {
                 style={styles.payButton}
                 onPress={() => handlePayDebt(debt.id, 50)}
               >
-                <Text style={styles.payButtonText}>+50 ₼</Text>
+                <Text style={styles.payButtonText}>+50 {currencySymbol}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.payButton}
                 onPress={() => handlePayDebt(debt.id, 100)}
               >
-                <Text style={styles.payButtonText}>+100 ₼</Text>
+                <Text style={styles.payButtonText}>+100 {currencySymbol}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.payButton, styles.payAllButton]}
                 onPress={() => handlePayDebt(debt.id, remainingAmount)}
               >
-                <Text style={styles.payAllButtonText}>Hamısını ödə</Text>
+                <Text style={styles.payAllButtonText}>{t.debts.pay}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -293,7 +298,7 @@ export default function DebtsScreen() {
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Yeni Borç</Text>
           <TouchableOpacity onPress={() => setShowAddDebtModal(false)}>
-            <Ionicons name="close" size={24} color={Colors.light.textSecondary} />
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -303,14 +308,14 @@ export default function DebtsScreen() {
           renderItem={() => (
             <View>
               <Input
-                placeholder="Borç adı"
+                placeholder={t.debts.titleLabel}
                 value={newDebt.title}
                 onChangeText={(text) => setNewDebt(prev => ({ ...prev, title: text }))}
                 style={styles.modalInput}
               />
               
               <Input
-                placeholder="Təsvir (istəyə bağlı)"
+                placeholder={t.debts.description}
                 value={newDebt.description}
                 onChangeText={(text) => setNewDebt(prev => ({ ...prev, description: text }))}
                 style={styles.modalInput}
@@ -318,7 +323,7 @@ export default function DebtsScreen() {
               />
               
               <Input
-                placeholder="Məbləğ (₼)"
+                placeholder={t.debts.amount}
                 value={newDebt.amount}
                 onChangeText={(text) => setNewDebt(prev => ({ ...prev, amount: text }))}
                 keyboardType="numeric"
@@ -326,14 +331,14 @@ export default function DebtsScreen() {
               />
               
               <Input
-                placeholder="Borç verən"
+                placeholder={t.debts.creditor}
                 value={newDebt.creditor}
                 onChangeText={(text) => setNewDebt(prev => ({ ...prev, creditor: text }))}
                 style={styles.modalInput}
               />
               
               <Input
-                placeholder="Son tarix (YYYY-MM-DD)"
+                placeholder={t.debts.dueDate}
                 value={newDebt.dueDate}
                 onChangeText={(text) => setNewDebt(prev => ({ ...prev, dueDate: text }))}
                 style={styles.modalInput}
@@ -345,7 +350,7 @@ export default function DebtsScreen() {
 
         <View style={styles.modalFooter}>
           <Button
-            title="Borç Əlavə Et"
+            title={t.debts.addDebt}
             onPress={handleAddDebt}
             style={styles.addButton}
           />
@@ -357,14 +362,14 @@ export default function DebtsScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIcon}>
-        <Ionicons name="document-text-outline" size={64} color={Colors.light.textSecondary} />
+        <Ionicons name="document-text-outline" size={64} color={colors.textSecondary} />
       </View>
-      <Text style={styles.emptyTitle}>Hələ borç yoxdur</Text>
+      <Text style={styles.emptyTitle}>{t.debts.noDebts}</Text>
       <Text style={styles.emptySubtitle}>
-        İlk borcunuzu əlavə etmək üçün aşağıdakı düyməyə basın
+        {t.goals.addFirstGoal || t.debts.addDebt}
       </Text>
       <Button
-        title="Borç Əlavə Et"
+        title={t.debts.addDebt}
         onPress={() => setShowAddDebtModal(true)}
         style={styles.emptyButton}
       />
@@ -378,7 +383,7 @@ export default function DebtsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppHeader 
-        title="Borclar"
+        title={t.debts.title}
         onSearchPress={() => {}}
         onNotificationPress={() => {}}
         onProfilePress={() => {}}
@@ -399,12 +404,12 @@ export default function DebtsScreen() {
                 <View style={styles.filterRow}>
                   {/* Year Selector */}
                   <View style={styles.filterItem}>
-                    <Text style={styles.filterLabel}>İl:</Text>
+                    <Text style={styles.filterLabel}>{t.debts.year}:</Text>
                     <TouchableOpacity
                       style={styles.filterButton}
                       onPress={() => {
                         Alert.alert(
-                          'İl Seçin',
+                          t.debts.year,
                           '',
                           getYearOptions().map(year => ({
                             text: year.toString(),
@@ -414,18 +419,18 @@ export default function DebtsScreen() {
                       }}
                     >
                       <Text style={styles.filterButtonText}>{selectedYear}</Text>
-                      <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
+                      <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
 
                   {/* Month Selector */}
                   <View style={styles.filterItem}>
-                    <Text style={styles.filterLabel}>Ay:</Text>
+                    <Text style={styles.filterLabel}>{t.debts.month}:</Text>
                     <TouchableOpacity
                       style={styles.filterButton}
                       onPress={() => {
                         Alert.alert(
-                          'Ay Seçin',
+                          t.debts.month,
                           '',
                           getMonthOptions().map(month => ({
                             text: month.label,
@@ -437,7 +442,7 @@ export default function DebtsScreen() {
                       <Text style={styles.filterButtonText}>
                         {getMonthOptions().find(m => m.value === selectedMonth)?.label}
                       </Text>
-                      <Ionicons name="chevron-down" size={16} color={Colors.light.textSecondary} />
+                      <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
 
@@ -446,8 +451,8 @@ export default function DebtsScreen() {
                     style={styles.applyFilterButton}
                     onPress={handleFilterDebts}
                   >
-                    <Ionicons name="filter" size={16} color={Colors.light.background} />
-                    <Text style={styles.applyFilterButtonText}>Axtar</Text>
+                    <Ionicons name="filter" size={16} color="#FFFFFF" />
+                    <Text style={styles.applyFilterButtonText}>{t.debts.filter}</Text>
                   </TouchableOpacity>
                 </View>
               </Card>
@@ -458,17 +463,17 @@ export default function DebtsScreen() {
               <View style={styles.summaryContainer}>
                 <Card style={styles.summaryCard}>
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Ümumi Borç:</Text>
-                    <Text style={styles.summaryValue}>{totalDebt.toFixed(2)} ₼</Text>
+                    <Text style={styles.summaryLabel}>{t.debts.totalDebts}:</Text>
+                    <Text style={styles.summaryValue}>{totalDebt.toFixed(2)} {currencySymbol}</Text>
                   </View>
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Ödənilən:</Text>
-                    <Text style={styles.summaryValue}>{totalPaid.toFixed(2)} ₼</Text>
+                    <Text style={styles.summaryLabel}>{t.debts.paid}:</Text>
+                    <Text style={styles.summaryValue}>{totalPaid.toFixed(2)} {currencySymbol}</Text>
                   </View>
                   <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Qalan:</Text>
+                    <Text style={styles.summaryLabel}>{t.debts.remaining}:</Text>
                     <Text style={[styles.summaryValue, styles.remainingAmount]}>
-                      {totalRemaining.toFixed(2)} ₼
+                      {totalRemaining.toFixed(2)} {currencySymbol}
                     </Text>
                   </View>
                 </Card>
@@ -478,7 +483,7 @@ export default function DebtsScreen() {
             {/* Section Title */}
             <View style={styles.debtsContainer}>
               <Text style={styles.sectionTitle}>
-                Borclar ({filteredDebts.length})
+                {t.debts.title} ({filteredDebts.length})
               </Text>
             </View>
           </View>
@@ -491,7 +496,7 @@ export default function DebtsScreen() {
                   style={styles.fab}
                   onPress={() => setShowAddDebtModal(true)}
                 >
-                  <Ionicons name="add" size={24} color={Colors.light.background} />
+                  <Ionicons name="add" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
             )}
@@ -504,10 +509,10 @@ export default function DebtsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
   },
   summaryContainer: {
     paddingBottom: DesignSystem.spacing.md,
@@ -523,17 +528,17 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
   remainingAmount: {
-    color: Colors.light.error,
+    color: colors.error,
   },
   content: {
     flex: 1,
@@ -548,7 +553,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginBottom: DesignSystem.spacing.md,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
@@ -573,7 +578,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     marginBottom: DesignSystem.spacing.xs,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
@@ -581,22 +586,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     paddingHorizontal: DesignSystem.spacing.md,
     paddingVertical: DesignSystem.spacing.sm,
     borderRadius: DesignSystem.borderRadius.medium,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: colors.border,
   },
   filterButtonText: {
     fontSize: 14,
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   applyFilterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: DesignSystem.spacing.md,
     paddingVertical: DesignSystem.spacing.sm,
     borderRadius: DesignSystem.borderRadius.medium,
@@ -605,7 +610,7 @@ const styles = StyleSheet.create({
   applyFilterButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.background,
+    color: '#FFFFFF',
     marginLeft: DesignSystem.spacing.xs,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
@@ -613,8 +618,8 @@ const styles = StyleSheet.create({
     padding: DesignSystem.spacing.md,
   },
   paidDebt: {
-    backgroundColor: Colors.light.success + '10',
-    borderColor: Colors.light.success + '30',
+    backgroundColor: colors.success + '10',
+    borderColor: colors.success + '30',
   },
   debtHeader: {
     flexDirection: 'row',
@@ -631,17 +636,17 @@ const styles = StyleSheet.create({
   debtTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     flex: 1,
   },
   paidText: {
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
   },
   paidBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.success + '20',
+    backgroundColor: colors.success + '20',
     paddingHorizontal: DesignSystem.spacing.sm,
     paddingVertical: DesignSystem.spacing.xs,
     borderRadius: DesignSystem.borderRadius.small,
@@ -650,12 +655,12 @@ const styles = StyleSheet.create({
   paidBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.success,
+    color: colors.success,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   debtCreditor: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: DesignSystem.spacing.sm,
     flexDirection: 'row',
@@ -663,7 +668,7 @@ const styles = StyleSheet.create({
   },
   debtDescription: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     marginBottom: DesignSystem.spacing.md,
     lineHeight: 20,
@@ -679,13 +684,13 @@ const styles = StyleSheet.create({
   },
   amountLabel: {
     fontSize: 14,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   amountValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   debtProgress: {
@@ -697,22 +702,22 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   progressBar: {
     height: 8,
-    backgroundColor: Colors.light.surface,
+    backgroundColor: colors.surface,
     borderRadius: DesignSystem.borderRadius.small,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: Colors.light.error,
+    backgroundColor: colors.error,
     borderRadius: DesignSystem.borderRadius.small,
   },
   paidProgress: {
-    backgroundColor: Colors.light.success,
+    backgroundColor: colors.success,
   },
   debtFooter: {
     flexDirection: 'row',
@@ -721,20 +726,20 @@ const styles = StyleSheet.create({
   },
   debtDueDate: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     flexDirection: 'row',
     alignItems: 'center',
   },
   overdueText: {
-    color: Colors.light.error,
+    color: colors.error,
   },
   debtActions: {
     flexDirection: 'row',
     gap: DesignSystem.spacing.sm,
   },
   payButton: {
-    backgroundColor: Colors.light.error,
+    backgroundColor: colors.error,
     paddingHorizontal: DesignSystem.spacing.sm,
     paddingVertical: DesignSystem.spacing.xs,
     borderRadius: DesignSystem.borderRadius.small,
@@ -742,16 +747,16 @@ const styles = StyleSheet.create({
   payButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.background,
+    color: '#FFFFFF',
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   payAllButton: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
   },
   payAllButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.background,
+    color: '#FFFFFF',
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
   fabContainer: {
@@ -763,7 +768,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.light.primary,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...DesignSystem.shadows.medium,
@@ -779,13 +784,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
     marginBottom: DesignSystem.spacing.sm,
   },
   emptySubtitle: {
     fontSize: 16,
-    color: Colors.light.textSecondary,
+    color: colors.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
     textAlign: 'center',
     lineHeight: 24,
@@ -806,7 +811,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   modalContent: {
-    backgroundColor: Colors.light.background,
+    backgroundColor: colors.background,
     borderRadius: DesignSystem.borderRadius.large,
     width: '90%',
     maxHeight: '80%',
@@ -818,12 +823,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: DesignSystem.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'Inter',
   },
   modalBody: {
@@ -835,7 +840,7 @@ const styles = StyleSheet.create({
   modalFooter: {
     padding: DesignSystem.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
+    borderTopColor: colors.border,
   },
   addButton: {
     width: '100%',

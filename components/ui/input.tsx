@@ -1,4 +1,5 @@
-import { Colors, DesignSystem } from '@/constants/theme';
+import { DesignSystem } from '@/constants/theme';
+import { useThemedColors } from '@/hooks/useThemedStyles';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -52,16 +53,17 @@ export function Input({
   autoCapitalize = 'none',
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const colors = useThemedColors();
 
   const getContainerStyle = (): ViewStyle => {
     return {
-      backgroundColor: Colors.light.background,
+      backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: error 
-        ? Colors.light.error 
+        ? colors.error 
         : isFocused 
-          ? Colors.light.primary 
-          : Colors.light.border,
+          ? colors.primary 
+          : colors.border,
       borderRadius: DesignSystem.borderRadius.medium,
       paddingHorizontal: DesignSystem.spacing.md,
       paddingVertical: multiline ? DesignSystem.spacing.md : DesignSystem.spacing.sm,
@@ -77,7 +79,7 @@ export function Input({
       flex: 1,
       fontSize: 16,
       fontWeight: '400',
-      color: Colors.light.text,
+      color: colors.text,
       fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
       ...(multiline && { textAlignVertical: 'top' }),
     };
@@ -89,7 +91,7 @@ export function Input({
         <Ionicons
           name={leftIcon}
           size={20}
-          color={isFocused ? Colors.light.primary : Colors.light.iconSecondary}
+          color={isFocused ? colors.primary : colors.iconSecondary}
           style={styles.leftIcon}
         />
       );
@@ -108,7 +110,7 @@ export function Input({
           <Ionicons
             name={rightIcon}
             size={20}
-            color={isFocused ? Colors.light.primary : Colors.light.iconSecondary}
+            color={isFocused ? colors.primary : colors.iconSecondary}
           />
         </TouchableOpacity>
       );
@@ -119,14 +121,14 @@ export function Input({
   return (
     <View style={[styles.container, style]}>
       {label && (
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
       )}
       <View style={getContainerStyle()}>
         {renderLeftIcon()}
         <TextInput
           style={[getInputStyle(), inputStyle]}
           placeholder={placeholder}
-          placeholderTextColor={Colors.light.textLight}
+          placeholderTextColor={colors.textSecondary}
           value={value}
           onChangeText={onChangeText}
           onFocus={() => setIsFocused(true)}
@@ -142,7 +144,7 @@ export function Input({
         {renderRightIcon()}
       </View>
       {error && (
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
       )}
     </View>
   );
@@ -184,7 +186,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: DesignSystem.spacing.xs,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
@@ -196,7 +197,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: Colors.light.error,
     marginTop: DesignSystem.spacing.xs,
     fontFamily: Platform.OS === 'ios' ? 'SF Pro Text' : 'Inter',
   },
