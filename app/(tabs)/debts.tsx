@@ -55,20 +55,22 @@ export default function DebtsScreen() {
 
   const filterDebtsByDate = (debtsList: Debt[], year: number, month: number) => {
     const filtered = debtsList.filter(debt => {
+      const createdDate = new Date(debt.createdAt);
       const dueDate = new Date(debt.dueDate);
-      const debtYear = dueDate.getFullYear();
-      const debtMonth = dueDate.getMonth() + 1;
       
-      // Show debts that are due in the selected month/year or before
-      return debtYear < year || (debtYear === year && debtMonth <= month);
+      // Create a date object for the selected month/year (first day of the month)
+      const selectedDate = new Date(year, month - 1, 1);
+      
+      // Normalize dates to the first day of their respective months for comparison
+      const createdMonth = new Date(createdDate.getFullYear(), createdDate.getMonth(), 1);
+      const dueMonth = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1);
+      
+      // Show debts where the selected date falls within the debt period
+      // i.e., selected date is between created date and due date (inclusive)
+      return selectedDate >= createdMonth && selectedDate <= dueMonth;
     });
     
-    // If no debts match the filter, show all debts
-    if (filtered.length === 0 && debtsList.length > 0) {
-      setFilteredDebts(debtsList);
-    } else {
-      setFilteredDebts(filtered);
-    }
+    setFilteredDebts(filtered);
   };
 
   const handleFilterDebts = () => {

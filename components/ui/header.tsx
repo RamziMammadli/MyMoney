@@ -89,46 +89,12 @@ export function Header({
   const iconColor = variant === 'gradient' ? '#FFFFFF' : colors.icon;
 
   const renderLeftButton = () => {
-    if (showBackButton) {
-      return (
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onBackPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back" size={24} color={iconColor} />
-        </TouchableOpacity>
-      );
-    }
-
-    if (leftIcon) {
-      return (
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onLeftPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name={leftIcon} size={24} color={iconColor} />
-        </TouchableOpacity>
-      );
-    }
-
+    // Icons are disabled; keep spacing with an empty view
     return <View style={styles.iconButton} />;
   };
 
   const renderRightButton = () => {
-    if (rightIcon) {
-      return (
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={onRightPress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name={rightIcon} size={24} color={iconColor} />
-        </TouchableOpacity>
-      );
-    }
-
+    // Icons are disabled; keep spacing with an empty view
     return <View style={styles.iconButton} />;
   };
 
@@ -187,38 +153,11 @@ export function AppHeader({
           <Text style={[styles.appSubtitle, { color: colors.textSecondary }]}>{t.app.subtitle}</Text>
         </View>
 
-        {/* Right Side - Actions */}
+        {/* Right Side - Actions (disabled icons; keep placeholders) */}
         <View style={styles.appHeaderRight}>
-          {/* Search Button */}
-          <TouchableOpacity 
-            style={[styles.headerActionButton, { backgroundColor: colors.surface }]}
-            onPress={onSearchPress}
-          >
-            <Ionicons name="search" size={20} color={colors.text} />
-          </TouchableOpacity>
-
-          {/* Notifications Button */}
-          <TouchableOpacity 
-            style={[styles.headerActionButton, { backgroundColor: colors.surface }]}
-            onPress={onNotificationPress}
-          >
-            <Ionicons name="notifications-outline" size={20} color={colors.text} />
-            {notificationCount > 0 && (
-              <View style={[styles.notificationBadge, { backgroundColor: colors.error }]}>
-                <Text style={styles.notificationBadgeText}>
-                  {notificationCount > 9 ? '9+' : notificationCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Profile Button */}
-          <TouchableOpacity 
-            style={[styles.headerActionButton, { backgroundColor: colors.surface }]}
-            onPress={onProfilePress}
-          >
-            <Ionicons name="person-circle-outline" size={20} color={colors.text} />
-          </TouchableOpacity>
+          <View style={[styles.headerActionButton, { backgroundColor: colors.surface }]} />
+          <View style={[styles.headerActionButton, { backgroundColor: colors.surface }]} />
+          <View style={[styles.headerActionButton, { backgroundColor: colors.surface }]} />
         </View>
       </View>
     </View>
@@ -232,8 +171,7 @@ export function BalanceHeader({ balance, currency, onPress }: BalanceHeaderProps
       title={t.app.name}
       subtitle={`${balance} ${currency}`}
       variant="gradient"
-      rightIcon="eye"
-      onRightPress={onPress}
+      // Icons removed; keep layout only
       style={styles.balanceHeader}
     />
   );

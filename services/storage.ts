@@ -22,11 +22,31 @@ export interface Debt {
   createdAt: string;
 }
 
+export interface Goal {
+  id: string;
+  title: string;
+  description: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline: string;
+  isCompleted: boolean;
+  createdAt: string;
+}
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+// BudgetPlan removed
+
 const STORAGE_KEYS = {
   TRANSACTIONS: 'transactions',
   GOALS: 'goals',
   DEBTS: 'debts',
   SETTINGS: 'settings',
+  PROFILE: 'user_profile',
 };
 
 export class StorageService {
@@ -40,6 +60,8 @@ export class StorageService {
       return [];
     }
   }
+
+  // Budget Planning removed
 
   static async saveTransaction(transaction: Omit<Transaction, 'id' | 'createdAt'>): Promise<Transaction> {
     try {
@@ -253,6 +275,26 @@ export class StorageService {
     }
   }
 
+  // User Profile
+  static async getUserProfile(): Promise<UserProfile | null> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.PROFILE);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      return null;
+    }
+  }
+
+  static async saveUserProfile(profile: UserProfile): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
+    } catch (error) {
+      console.error('Error saving user profile:', error);
+      throw error;
+    }
+  }
+
   // Clear all data
   static async clearAllData(): Promise<void> {
     try {
@@ -261,6 +303,7 @@ export class StorageService {
         STORAGE_KEYS.GOALS,
         STORAGE_KEYS.DEBTS,
         STORAGE_KEYS.SETTINGS,
+        STORAGE_KEYS.PROFILE,
       ]);
     } catch (error) {
       console.error('Error clearing data:', error);

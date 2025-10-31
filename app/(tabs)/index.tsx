@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  Linking,
   View,
 } from 'react-native';
 
@@ -252,13 +253,19 @@ export default function HomeScreen() {
                   style={styles.promotionGradient}
                 >
                   <View style={styles.promotionContent}>
-                    <Text style={styles.promotionTitle}>{t.home.budgetPlanning}</Text>
-                    <Text style={styles.promotionSubtitle}>{t.home.budgetDescription}</Text>
+                    <Text style={styles.promotionTitle}>Rəmzi Müəllimə yaz</Text>
+                    <Text style={styles.promotionSubtitle}>Sualınız və ya ehtiyacınız var? WhatsApp-la yazın.</Text>
                     <Button
-                      title={t.home.plan}
+                      title="Indi yaz"
                       variant="accent"
                       size="small"
-                      onPress={() => {}}
+                      onPress={() => {
+                        const phone = '+994558780701';
+                        const url = `whatsapp://send?phone=${phone}`;
+                        Linking.openURL(url).catch(() => {
+                          Linking.openURL(`https://wa.me/${phone.replace('+', '')}`);
+                        });
+                      }}
                       style={styles.promotionButton}
                     />
                   </View>
@@ -426,6 +433,7 @@ const getStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.cre
   },
   promotionsContainer: {
     marginBottom: DesignSystem.spacing.xl,
+    
   },
   promotionCard: {
     padding: 0,
@@ -433,10 +441,12 @@ const getStyles = (colors: ReturnType<typeof useThemedColors>) => StyleSheet.cre
   },
   promotionGradient: {
     padding: DesignSystem.spacing.lg,
+    borderRadius:10,
   },
   promotionContent: {
     alignItems: 'center',
-  },
+    borderRadius:10,
+   },
   promotionTitle: {
     fontSize: 20,
     fontWeight: '700',

@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    Alert,
-    FlatList,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,16 +21,20 @@ import { DesignSystem } from '@/constants/theme';
 import { currencySymbols, useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useThemedColors } from '@/hooks/useThemedStyles';
-import { StorageService } from '@/services/storage';
+import { StorageService, UserProfile as StoredUserProfile } from '@/services/storage';
 
-interface UserProfile {
-  name: string;
-  email: string;
-  phone: string;
+interface UserProfile extends StoredUserProfile {
   currency: string;
   language: string;
   notifications: boolean;
   darkMode: boolean;
+}
+
+interface AppStats {
+  totalTransactions: number;
+  activeGoals: number;
+  completedGoals: number;
+  totalDebts: number;
 }
 
 export default function ProfileScreen() {
@@ -48,11 +52,58 @@ export default function ProfileScreen() {
     darkMode: isDark,
   });
 
+  const [stats, setStats] = useState<AppStats>({
+    totalTransactions: 0,
+    activeGoals: 0,
+    completedGoals: 0,
+    totalDebts: 0,
+  });
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
   const [editField, setEditField] = useState<keyof UserProfile | null>(null);
   const [editValue, setEditValue] = useState('');
+
+  useEffect(() => {
+    loadProfile();
+    loadStats();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const savedProfile = await StorageService.getUserProfile();
+      if (savedProfile) {
+        setProfile(prev => ({
+          ...prev,
+          name: savedProfile.name,
+          email: savedProfile.email,
+          phone: savedProfile.phone,
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const [transactions, goals, debts] = await Promise.all([
+        StorageService.getTransactions(),
+        StorageService.getGoals(),
+        StorageService.getDebts(),
+      ]);
+
+      setStats({
+        totalTransactions: transactions.length,
+        activeGoals: goals.filter(g => !g.isCompleted).length,
+        completedGoals: goals.filter(g => g.isCompleted).length,
+        totalDebts: debts.filter(d => !d.isPaid).length,
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
 
   const handleEditProfile = (field: keyof UserProfile, currentValue: string) => {
     if (field === 'language') {
@@ -68,7 +119,7 @@ export default function ProfileScreen() {
     setShowEditModal(true);
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!editField) return;
 
     const updatedProfile = {
@@ -77,6 +128,21 @@ export default function ProfileScreen() {
     };
     
     setProfile(updatedProfile);
+    
+    // Save to AsyncStorage if it's a profile field (name, email, phone)
+    if (editField === 'name' || editField === 'email' || editField === 'phone') {
+      try {
+        await StorageService.saveUserProfile({
+          name: updatedProfile.name,
+          email: updatedProfile.email,
+          phone: updatedProfile.phone,
+        });
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        Alert.alert(t.profile.error, 'Məlumatlar saxlanılarkən xəta baş verdi');
+      }
+    }
+    
     setShowEditModal(false);
     setEditField(null);
     setEditValue('');
@@ -205,19 +271,19 @@ export default function ProfileScreen() {
       <Text style={styles.statsTitle}>{t.profile.stats}</Text>
       <View style={styles.statsGrid}>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statValue}>{stats.totalTransactions}</Text>
           <Text style={styles.statLabel}>{t.profile.totalTransactions}</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statValue}>{stats.activeGoals}</Text>
           <Text style={styles.statLabel}>{t.profile.activeGoals}</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statValue}>{stats.completedGoals}</Text>
           <Text style={styles.statLabel}>{t.profile.completedGoals}</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statValue}>{stats.totalDebts}</Text>
           <Text style={styles.statLabel}>{t.profile.totalDebts}</Text>
         </View>
       </View>
